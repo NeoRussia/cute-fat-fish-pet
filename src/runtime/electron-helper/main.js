@@ -2012,8 +2012,9 @@ const TTS_HEADERS = {
 };
 // 音色白名单（菜单只放 6 个中文音色，这里按 SPEC 收全 8 个：渲染端给别的值一律回落默认）
 const TTS_VOICES = [
-  'en-US-AvaNeural', 'en-US-JennyNeural', 'en-US-AriaNeural', 'en-US-GuyNeural',
-  'en-US-EmmaNeural', 'en-GB-SoniaNeural', 'en-AU-NatashaNeural', 'en-CA-ClaraNeural',
+  'en-US-AnaNeural', 'en-US-AvaNeural', 'en-US-EmmaNeural', 'en-US-JennyNeural',
+  'en-US-AriaNeural', 'en-US-MichelleNeural', 'en-US-GuyNeural', 'en-GB-SoniaNeural',
+  'en-AU-NatashaNeural', 'en-CA-ClaraNeural',
 ];
 
 /** 与 edge-tts（python）逐位一致：ticks 乘 1e7 后超过 2^53，float64 会把尾数舍入，
@@ -2212,7 +2213,7 @@ function ttsSynthesizeOn(url, text, voice, rate, timeoutMs, opts, onOpen) {
 
 async function ttsSynthesize(opts) {
   const text = String((opts && opts.text) || '').trim();
-  const voice = (opts && opts.voice) || 'en-US-AvaNeural';
+  const voice = (opts && opts.voice) || 'en-US-AnaNeural';
   const rate = (opts && opts.rate) || '+0%';
   const timeoutMs = (opts && opts.timeoutMs) || 15000;
   if (!text) return Promise.reject(new Error('TTS text is empty'));
@@ -2242,7 +2243,7 @@ ipcMain.handle('pet:tts-speak', async (event, payload) => {
   const text = raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
   if (!text) return { ok: false, error: 'empty-text' };
   if (text.length > TTS_MAX_TEXT) return { ok: false, error: 'text-too-long' };
-  const voice = typeof p.voice === 'string' && TTS_VOICES.indexOf(p.voice) >= 0 ? p.voice : 'en-US-AvaNeural';
+  const voice = typeof p.voice === 'string' && TTS_VOICES.indexOf(p.voice) >= 0 ? p.voice : 'en-US-AnaNeural';
   const rate = typeof p.rate === 'string' && /^[+-]\d{1,3}%$/.test(p.rate) ? p.rate : '+0%';
   if (TTS_INFLIGHT >= TTS_MAX_INFLIGHT) return { ok: false, error: 'busy (2 sentences already being synthesised)' };
   const t0 = Date.now();

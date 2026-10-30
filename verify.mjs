@@ -18,8 +18,8 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 // >>>GENERATED 由 build\check-release.mjs --emit --write 生成，别手改这一段
 const EXPECT = {
-  app: { files: 598, bytes: 74691203, treeSha256: "a0bd45c7c36ee6e891842c73c47b84d7b6c5f62928676e33cea2e35bab974fc6" },
-  launcher: { files: 10, bytes: 405901, treeSha256: "7785467af485c6bf5c1c35820abcd404321c229eb5c87a79e794457faed28a1b" },
+  app: { files: 598, bytes: 74691435, treeSha256: "1df975c8c383613e4b884f91623a7519ddcbd59f9a50252161b0484cc8e85ee0" },
+  launcher: { files: 10, bytes: 406036, treeSha256: "7d520b805083b3382aa55b6b6834897727a274c1b6c145c57ac74a32a4cecd15" },
   standalone: { files: 14, bytes: 108717, treeSha256: "3c1dedfc207206ca23e96a02992297eca7c3c5b658216052d0f48941299b9e0a" },
   defaults: { files: 4, bytes: 14171, treeSha256: "5fbae451c060b9c19ca3f6171a06c756cca4b0c780244a2e23f58abc6f72bde7" },
 };
@@ -27,13 +27,13 @@ const EXPECT = {
 // 我们自己写的那些关键文件：大小 + sha256（不含 verify.mjs 自己 —— 它一改哈希就变）
 const OURS = {
   'app/lib/index.js': [132857, 'f8042c8ad3d25c4c32f5f0025dc2d637cf989f000099856c7d9a64c582adf4a6'],
-  'app/runtime/electron-helper/main.js': [142652, '0dd69852347465ec0c48d48ae1d33906a70fb154aeecce368f30c26ae0785279'],
-  'app/runtime/electron-helper/sprite.js': [254488, '452927105ce7edb282b8916e1798a61dd6921b42da413c087472a0fa355d5f09'],
+  'app/runtime/electron-helper/main.js': [142698, '4fca7c36c61a679fadfe49123d9b3184efc12716b87990eaf757bfc458fcdf15'],
+  'app/runtime/electron-helper/sprite.js': [254674, '1ad25b30c460a3b19a735f0daa3bc518dc91126cfcd9a2b402b3cdcf3cb66eef'],
   'app/runtime/electron-helper/targets.js': [9403, 'caac7e913a418466ac3e50afbbc9c3c95b5d2ed05dd3e8dfc0b9476d82050636'],
   'app/runtime/electron-helper/shared-core.js': [54397, '9c82f0ca15958008ebb20dde83055e875088b5a7e7c6ad609280b8d5bbd2ca76'],
   'app/runtime/electron-helper/events.js': [18485, 'd61d6e84eb3448210892c4edc8bc2ad8d430372a099d15c5580db965a2be9d0e'],
   'launcher/main.js': [41984, '733fd3ca022b714c895c9cf3bbcda6592fcfc35024ce9e0f127fc615778d388f'],
-  'launcher/index.html': [120479, '2ce836f1472b85aea4c7483e50f4a8ac82d0ce54b398861ae46dab094844a30a'],
+  'launcher/index.html': [120614, '1825c50a9c0b0026cfa573527ca4129f7fb6f5e14baee87e227b70e744d33c30'],
   'launcher/preload.js': [4452, '26633162c436037f4a6c0e3a39712933a823423efbad4b79778b4cee06ec6bc5'],
   'launcher/paths.js': [4216, '2bc08e2d6c24fe09fd2ad578d5081bd60dc9c548e612fa0e9e07f22c60dfda41'],
   'launcher/update.js': [28253, 'ba1b6a08ececcfc00ee8af04318ffa57b78b38a7f305ff7f253b8e7aa193fadf'],

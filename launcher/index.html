@@ -1820,9 +1820,12 @@ $("saveVoice").onclick = async () => {
 // 这几组值必须跟桌宠渲染端 ttsVoiceTable / ttsRateTable / ttsVolTable **一模一样**：
 // 她那边的 ttsConfig() 会逐个白名单校验，给了表外的值会被静默换成默认值（等于白改）。
 const TTS_VOICES = [
-  ["en-US-AvaNeural", "Ava · warm (default)"],
+  ["en-US-AnaNeural", "Ana · cute (default)"],
+  ["en-US-AvaNeural", "Ava · warm"],
+  ["en-US-EmmaNeural", "Emma · cheerful"],
   ["en-US-JennyNeural", "Jenny · friendly"],
   ["en-US-AriaNeural", "Aria · bright"],
+  ["en-US-MichelleNeural", "Michelle · gentle"],
   ["en-US-GuyNeural", "Guy · male"],
   ["en-GB-SoniaNeural", "Sonia · British"],
   ["en-AU-NatashaNeural", "Natasha · Australian"],
