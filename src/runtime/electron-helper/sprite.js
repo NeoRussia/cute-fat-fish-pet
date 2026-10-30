@@ -2374,7 +2374,7 @@ class PetSprite {
 
   // 对图标只做视觉互动：看过去 + 戳一下的动作（绝不碰文件）
   pokeItem(item) {
-    const cute = ['Tapping the desk', 'Mirror', 'Folding fan', 'Yawning', 'Napping in place', 'Big stretch'];
+    const cute = ['Tapping the desk', 'Looking in the mirror', 'Folding fan', 'Yawning', 'Napping in place', 'Big stretch'];
     const found = [];
     for (const c of this.animations.categories || []) {
       for (const a of c.actions || []) if (cute.indexOf(a) >= 0) found.push(a);

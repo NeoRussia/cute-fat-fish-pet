@@ -146,11 +146,11 @@
     "drag": ["Dangling while dragged"],
     // 点击回应动画池（点按宠物时触发，随机抽 1 个）
     "clicks": [
-      "Click: happy hop",
-      "Click: shy surprise",
-      "Click: tsundere pout",
-      "Click: ticklish giggle",
-      "Click: cheerful wave"
+      "Click - happy hop",
+      "Click - shy surprise",
+      "Click - tsundere pout",
+      "Click - ticklish giggle",
+      "Click - cheerful wave"
     ],
     // 移动动画池：default 是每个动作都用的默认参数；actions 里每项可覆盖部分参数，
     // 未写的字段取 default。minDist/maxDist=单次行进距离(px)——以「基准宠物宽 462px」为准，
@@ -204,18 +204,18 @@
     //   与提示词文件 prompts/桌面宠物 10 秒动作提示词.md 的 6 段动画一一对应。
     "events": {
       "balance": [
-        "Balance: purse overflowing",   // 0 ≤ p < 20（几乎未消耗）
-        "Balance: coins jingling",   // 20 ≤ p < 40
-        "Balance: purse as usual",   // 40 ≤ p < 60
-        "Balance: counting, frowning",   // 60 ≤ p < 80
-        "Balance: purse nearly empty",   // 80 ≤ p < 100（告急）
-        "Balance: not a penny left"    // p === 100（全部用完，格外档）
+        "Balance - purse overflowing",   // 0 ≤ p < 20（几乎未消耗）
+        "Balance - coins jingling",   // 20 ≤ p < 40
+        "Balance - purse as usual",   // 40 ≤ p < 60
+        "Balance - counting, frowning",   // 60 ≤ p < 80
+        "Balance - purse nearly empty",   // 80 ≤ p < 100（告急）
+        "Balance - not a penny left"    // p === 100（全部用完，格外档）
       ],
       // 碎碎念：到点随机抽 1 段播（等概率），与 eventsRefreshSec.whisper 周期对应
       "whisper": [
-        "Chatter: wiping the table",
-        "Chatter: spacing out",
-        "Chatter: at the screen"
+        "Chatter - wiping the table",
+        "Chatter - spacing out",
+        "Chatter - at the screen"
       ],
       // 工作状态联动（pets[].workStatusEnabled 开启时）：按索引 = 状态档位，勿在中间插入新档
       //（新档只可追加到末尾，否则已生效配置的档位含义错位）：
@@ -226,12 +226,12 @@
       //   index 4 = success（turn/end completed 完成）
       //   index 5 = error（turn/end error/max-tokens 出错/达上限）
       "workStatus": [
-        "Work: thinking bubbles",      // index 0 thinking（turn/start 回合开）
-        "Work: busy tapping",      // index 1 working（tool/call 工具调用）
-        "Work: filing away",      // index 2 result（tool/result 工具完成回整理）
-        "Work: pacing and peeking",  // index 3 waiting（approval/asked 等待批准）
-        "Work: celebrating",      // index 4 success（turn/end completed 完成）
-        "Work: head down, sighing"   // index 5 error（turn/end error/max-tokens 出错/达上限）
+        "Work - thinking bubbles",      // index 0 thinking（turn/start 回合开）
+        "Work - busy tapping",      // index 1 working（tool/call 工具调用）
+        "Work - filing away",      // index 2 result（tool/result 工具完成回整理）
+        "Work - pacing and peeking",  // index 3 waiting（approval/asked 等待批准）
+        "Work - celebrating",      // index 4 success（turn/end completed 完成）
+        "Work - head down, sighing"   // index 5 error（turn/end error/max-tokens 出错/达上限）
       ]
     }
   },
