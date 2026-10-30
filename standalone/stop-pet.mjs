@@ -56,7 +56,7 @@ function pidAlive(pid) {
 
 const rt = readRuntime();
 if (!rt) {
-	say("没有 runtime.json —— 看起来这只桌宠没在跑（或已经被停掉了）。");
+	say("No runtime.json — the pet doesn't seem to be running (or was already stopped).");
 	process.exit(0);
 }
 
@@ -73,9 +73,9 @@ if (Number.isInteger(port) && port > 0) {
 			signal: AbortSignal.timeout(8000),
 		});
 		graceful = res.ok;
-		say(`POST http://127.0.0.1:${port}/shutdown → ${res.status}${res.ok ? "（已请求收尾）" : ""}`);
+		say(`POST http://127.0.0.1:${port}/shutdown → ${res.status}${res.ok ? " (shutdown requested)" : ""}`);
 	} catch (error) {
-		say(`/shutdown 不通（${error instanceof Error ? error.message : String(error)}），改用 pid 兜底。`);
+		say(`/shutdown didn't answer (${error instanceof Error ? error.message : String(error)}); falling back to pid.`);
 	}
 }
 
@@ -83,11 +83,11 @@ if (Number.isInteger(port) && port > 0) {
 for (let i = 0; i < 30 && pidAlive(pid); i++) await sleep(500);
 
 if (pidAlive(pid)) {
-	say(`pid ${pid} 还活着，强制结束。`);
+	say(`pid ${pid} is still alive; killing it.`);
 	try {
 		process.kill(pid, "SIGTERM");
 	} catch (error) {
-		say(`SIGTERM 失败：${error instanceof Error ? error.message : String(error)}`);
+		say(`SIGTERM failed: ${error instanceof Error ? error.message : String(error)}`);
 	}
 	await sleep(1500);
 	if (pidAlive(pid)) {
@@ -101,11 +101,11 @@ if (pidAlive(pid)) {
 }
 
 const alive = pidAlive(pid);
-say(alive ? `没停掉（pid ${pid} 仍在）。检查 run.err.log。` : `已停止（pid ${pid}${graceful ? "，优雅收尾" : ""}）。`);
+say(alive ? `Didn't stop (pid ${pid} still there). Check run.err.log.` : `Stopped (pid ${pid}${graceful ? ", graceful" : ""}).`);
 if (!alive && existsSync(RUNTIME_FILE)) {
 	try {
 		unlinkSync(RUNTIME_FILE);
-		say("runtime.json 已清理。");
+		say("runtime.json cleaned up.");
 	} catch {
 		/* ignore */
 	}

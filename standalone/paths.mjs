@@ -16,7 +16,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "
 import { dirname, join, resolve } from "node:path";
 
 export const APP_NAME = "BlueHairMaid"; // 目录名用 ASCII，显示名才用中文
-export const DISPLAY_NAME = "蓝毛小女仆";
+export const DISPLAY_NAME = "Blue-Haired Little Maid";
 
 /** %APPDATA%（Roaming） */
 export function appDataDir() {

@@ -25,7 +25,7 @@ const bubbleCss = [
     'padding:calc(var(--dsh-pet-size)*0.022) calc(var(--dsh-pet-size)*0.030);' +
     'border-radius:calc(var(--dsh-pet-size)*0.035);' +
     'background:rgba(255,255,255,.92);' +
-    'color:#2b2b2b;font-family:"ShangshouSoftCandy","Yuanti SC","YouYuan","幼圆","Comic Sans MS","PingFang SC","Microsoft YaHei",sans-serif;' +
+    'color:#2b2b2b;font-family:"ShangshouSoftCandy","Yuanti SC","YouYuan","Comic Sans MS","PingFang SC","Microsoft YaHei",sans-serif;' +
     'font-size:calc(var(--dsh-pet-size)*0.0455);line-height:1.6;z-index:3;pointer-events:none;' +
     'box-shadow:0 calc(var(--dsh-pet-size)*0.009) calc(var(--dsh-pet-size)*0.035) rgba(0,0,0,.14),0 1px 3px rgba(0,0,0,.08);' +
     'backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease;white-space:nowrap}',

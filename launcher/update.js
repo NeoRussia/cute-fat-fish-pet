@@ -205,8 +205,8 @@ async function check({ current = "", root = "", userRoot = "" } = {}) {
 				reason: e.status === 403 || e.status === 429 ? "rate-limit" : "http-" + e.status,
 				message:
 					e.status === 403 || e.status === 429
-						? "GitHub 说我们问得太勤了，过一会儿再点一次就好。"
-						: `GitHub 回了 ${e.status}，可能是网络中间有问题，过一会儿再试。`,
+						? "GitHub says we're asking too often — try again in a moment."
+						: `GitHub returned ${e.status}; something in between may be at fault — try again in a moment.`,
 				page: RELEASES_PAGE,
 				installed,
 			};
@@ -218,12 +218,12 @@ async function check({ current = "", root = "", userRoot = "" } = {}) {
 			reason,
 			message:
 				reason === "bad-feed"
-					? "GitHub 给的发布信息看不懂（可能被网络中间改坏了），过一会儿再试。"
+					? "GitHub's release info is unreadable (possibly corrupted in transit) — try again in a moment."
 					: reason === "offline"
-						? "连不上 GitHub（没网 / 被挡了 / 需要代理）。也可以点「在浏览器里打开发布页」自己下。"
+						? "Can't reach GitHub (no network / blocked / needs a proxy). You can also click \"Open the releases page in a browser\" and download it yourself."
 						: reason === "timeout"
-							? "问 GitHub 超时了，网络太慢或者被挡了 —— 过一会儿再试。"
-							: "检查更新没成功：" + msg,
+							? "GitHub timed out — network too slow or blocked. Try again in a moment."
+							: "Update check failed:" + msg,
 			page: RELEASES_PAGE,
 			installed,
 		};
@@ -232,7 +232,7 @@ async function check({ current = "", root = "", userRoot = "" } = {}) {
 	const tag = String(feed.tag_name || feed.tag || "").trim();
 	const latest = tag.replace(/^v/i, "");
 	if (!latest) {
-		return { ok: false, reason: "bad-feed", message: "GitHub 给的版本号看不懂：" + JSON.stringify(tag), page: RELEASES_PAGE, installed, current };
+		return { ok: false, reason: "bad-feed", message: "GitHub's version number is unreadable:" + JSON.stringify(tag), page: RELEASES_PAGE, installed, current };
 	}
 	const mirror = readMirror(userRoot);
 	const asset = pickInstaller(feed.assets, latest);
@@ -269,17 +269,17 @@ function humanMB(bytes) {
 }
 
 async function download({ exe, userRoot, updatesDir = "", onProgress = null, timeoutMs = 30000, redirects = 5 } = {}) {
-	if (!exe || !exe.url) return { ok: false, reason: "no-asset", message: "这一版没找到安装包附件。" };
+	if (!exe || !exe.url) return { ok: false, reason: "no-asset", message: "No installer attachment found for this version." };
 	const dir = updatesDir || path.join(userRoot, "updates");
 	const file = path.join(dir, exe.name);
 	const expected = String(exe.sha256 || "").toLowerCase();
 	if (!/^[0-9a-f]{64}$/.test(expected)) {
-		return { ok: false, reason: "no-hash", message: "这一版没给安装包的 SHA-256，为安全起见不自动装（请去发布页手动下）。", page: RELEASES_PAGE };
+		return { ok: false, reason: "no-hash", message: "This version ships no SHA-256 for the installer, so it won't auto-install for safety (download it manually from the releases page).", page: RELEASES_PAGE };
 	}
 	try {
 		fs.mkdirSync(dir, { recursive: true });
 	} catch (e) {
-		return { ok: false, reason: "no-dir", message: "建不了更新目录：" + String((e && e.message) || e) };
+		return { ok: false, reason: "no-dir", message: "Couldn't create the update directory:" + String((e && e.message) || e) };
 	}
 	// 之前下好过、哈希还对得上就不再下一次（347 MB 呢）
 	if (fs.existsSync(file)) {
@@ -303,7 +303,7 @@ async function download({ exe, userRoot, updatesDir = "", onProgress = null, tim
 		return {
 			ok: false,
 			reason,
-			message: reason === "offline" ? "下载失败：连不上（没网 / 被挡了 / 需要代理）。" : "下载失败：" + String((e && e.message) || e),
+			message: reason === "offline" ? "Download failed: unreachable (no network / blocked / needs a proxy)." : "Download failed:" + String((e && e.message) || e),
 			page: RELEASES_PAGE,
 		};
 	}
@@ -314,7 +314,7 @@ async function download({ exe, userRoot, updatesDir = "", onProgress = null, tim
 	}
 	if (res.statusCode !== 200) {
 		res.resume();
-		return { ok: false, reason: "http-" + res.statusCode, message: `下载失败：GitHub 回了 ${res.statusCode}。`, page: RELEASES_PAGE };
+		return { ok: false, reason: "http-" + res.statusCode, message: `Download failed: GitHub returned ${res.statusCode}.`, page: RELEASES_PAGE };
 	}
 
 	const total = Number(res.headers["content-length"] || exe.size || 0);
@@ -347,12 +347,12 @@ async function download({ exe, userRoot, updatesDir = "", onProgress = null, tim
 			}
 		});
 		ws.on("error", (e) => resolve({ err: "write-failed:" + String((e && e.message) || e) }));
-		res.on("error", (e) => resolve({ err: netReason(e) === "offline" ? "下载中断：网络断了。" : "下载失败：" + String((e && e.message) || e) }));
+		res.on("error", (e) => resolve({ err: netReason(e) === "offline" ? "Download interrupted: network dropped." : "Download failed:" + String((e && e.message) || e) }));
 		// 对方把连接掐了（短读）时 Node 不一定发 error，只发 aborted / close：
 		// 不接住这两个事件的话 download() 会一直挂着不返回。
-		res.on("aborted", () => resolve({ err: "下载中断：网络断了。" }));
+		res.on("aborted", () => resolve({ err: "Download interrupted: network dropped." }));
 		res.on("close", () => {
-			if (!res.complete) resolve({ err: "下载中断：网络断了。" });
+			if (!res.complete) resolve({ err: "Download interrupted: network dropped." });
 		});
 		res.on("end", () => ws.end(() => resolve({})));
 	});
@@ -364,7 +364,7 @@ async function download({ exe, userRoot, updatesDir = "", onProgress = null, tim
 		} catch {
 			/* 无所谓 */
 		}
-		return { ok: false, reason: String(r.err).includes("网络") ? "offline" : "download-error", message: r.err };
+		return { ok: false, reason: String(r.err).includes("Network") ? "offline" : "download-error", message: r.err };
 	}
 	if (total && received !== total) {
 		try {
@@ -372,7 +372,7 @@ async function download({ exe, userRoot, updatesDir = "", onProgress = null, tim
 		} catch {
 			/* 无所谓 */
 		}
-		return { ok: false, reason: "short-read", message: `只下到 ${humanMB(received)}（应该有 ${humanMB(total)}），网络断了，再点一次就好。` };
+		return { ok: false, reason: "short-read", message: `Only downloaded ${humanMB(received)} (expected ${humanMB(total)}); the network dropped — click again.` };
 	}
 	const got = hash.digest("hex");
 	if (got !== expected) {
@@ -384,7 +384,7 @@ async function download({ exe, userRoot, updatesDir = "", onProgress = null, tim
 		return {
 			ok: false,
 			reason: "sha-mismatch",
-			message: `下下来的安装包校验不过（拿到 ${got.slice(0, 16)}…，应该是 ${expected.slice(0, 16)}…），已经删掉，没有装。`,
+			message: `The downloaded installer fails verification (got ${got.slice(0, 16)}…, expected ${expected.slice(0, 16)}…); it was deleted, not installed.`,
 		};
 	}
 	fs.renameSync(part, file);
@@ -443,7 +443,7 @@ function buildVbsScript() {
 /** 生成 apply-update.ps1 的正文（带 BOM 写盘，PS 5.1 才认得里面的中文路径） */
 function buildApplyScript({ from, to, root, installer, logPath, resultPath, consolePid, petWasRunning }) {
 	return (
-		"# 可爱大肥鱼桌宠 · 一键更新（控制台写出来的，跑完自己删）\n" +
+		"# Cute Fat Fish Pet · one-click update (written by the console, deletes itself when done)\n" +
 		"$ErrorActionPreference = 'Continue'\n" +
 		`$from = ${psQuote(from)}\n` +
 		`$to = ${psQuote(to)}\n` +
@@ -458,14 +458,14 @@ function buildApplyScript({ from, to, root, installer, logPath, resultPath, cons
 		"function Say([string]$t) {\n" +
 		"  Add-Content -LiteralPath $logPath -Value ('[' + (Get-Date -Format 'HH:mm:ss') + '] ' + $t) -Encoding UTF8\n" +
 		"}\n" +
-		"Say ('开始更新：' + $from + ' -> ' + $to)\n" +
-		"Say ('安装目录：' + $root)\n" +
+		"Say ('Starting update: ' + $from + ' -> ' + $to)\n" +
+		"Say ('Install directory: ' + $root)\n" +
 		"\n" +
-		"# electron 不能带着 ELECTRON_RUN_AS_NODE 启动（那样它当纯 node 跑、窗口一闪就没了）\n" +
+		"# electron must not start with ELECTRON_RUN_AS_NODE (it would run as plain node and the window would flash and vanish)\n" +
 		"Remove-Item Env:\\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue\n" +
 		"Remove-Item Env:\\DSH_PET_SMOKE -ErrorAction SilentlyContinue\n" +
 		"\n" +
-		"# 1) 等控制台自己退干净（最多 60 秒）\n" +
+		"# 1) Wait for the console to fully quit (up to 60 seconds)\n" +
 		"$n = 0\n" +
 		"while ($n -lt 120) {\n" +
 		"  if (-not (Get-Process -Id $consolePid -ErrorAction SilentlyContinue)) { break }\n" +
@@ -473,25 +473,25 @@ function buildApplyScript({ from, to, root, installer, logPath, resultPath, cons
 		"  $n++\n" +
 		"}\n" +
 		"if (Get-Process -Id $consolePid -ErrorAction SilentlyContinue) {\n" +
-		"  Say '控制台一直没退出，什么都没动（可以稍后重试）'\n" +
+		"  Say 'The console never quit, nothing was touched (retry later)'\n" +
 		"  Set-Content -LiteralPath $resultPath -Encoding UTF8 -Value @(('ok=0'), ('exit=-1'), ('from=' + $from), ('to=' + $to), ('at=' + (Get-Date -Format 's')), ('log=' + $logPath))\n" +
 		"  exit 2\n" +
 		"}\n" +
-		"Say '控制台已退出'\n" +
+		"Say 'The console has quit'\n" +
 		"\n" +
-		"# 2) 桌宠也是从这个目录里的 electron.exe 起来的，文件占着就装不进去\n" +
+		"# 2) The pet also starts from electron.exe in this folder, so while the files are in use nothing can install\n" +
 		"if ($petWasRunning) {\n" +
 		"  $stop = Join-Path $root 'standalone\\stop-pet.vbs'\n" +
 		"  if (Test-Path -LiteralPath $stop) {\n" +
-		"    Say '先停桌宠……'\n" +
+		"    Say 'Stopping the pet first...'\n" +
 		"    & $wscript $stop | Out-Null\n" +
 		"    Start-Sleep -Seconds 2\n" +
 		"  }\n" +
 		"}\n" +
 		"\n" +
-		"# 3) 静默装回原目录。NSIS 的 /D= 必须是最后一个参数、且不能带引号，\n" +
-		"#    所以路径里有空格时改用 8.3 短路径；连短路径都取不到就只给 /S\n" +
-		"#    （安装程序会读注册表里 Software\\BlueHairMaid\\InstallDir 当默认目录）。\n" +
+		"# 3) Silent install back into the same folder. NSIS's /D= must be the last argument and unquoted,\n" +
+		"#    so paths with spaces use the 8.3 short path; if even that fails, just pass /S\n" +
+		"#    (the installer reads Software\\BlueHairMaid\\InstallDir from the registry as its default).\n" +
 		"$dest = $root\n" +
 		"$withD = $true\n" +
 		"if ($root -match '\\s') {\n" +
@@ -503,40 +503,40 @@ function buildApplyScript({ from, to, root, installer, logPath, resultPath, cons
 		"}\n" +
 		"$installArgs = @('/S')\n" +
 		"if ($withD) { $installArgs += ('/D=' + $dest) }\n" +
-		"Say ('开始静默安装：' + $installer + ' ' + ($installArgs -join ' '))\n" +
+		"Say ('Starting silent install: ' + $installer + ' ' + ($installArgs -join ' '))\n" +
 		"$proc = Start-Process -FilePath $installer -ArgumentList $installArgs -Wait -PassThru\n" +
 		"$code = $proc.ExitCode\n" +
-		"Say ('安装程序退出码：' + $code)\n" +
+		"Say ('Installer exit code: ' + $code)\n" +
 		"\n" +
-		"# 4) 装成功：清掉 zip 那条路留下的 4 个脚本（卸载项已经指向 Uninstall.exe）、\n" +
-		"#    再把 347 MB 的安装包删掉；装失败就留着安装包，方便重试。\n" +
+		"# 4) Success: remove the 4 scripts left by the zip path (the uninstall entry already points to Uninstall.exe),\n" +
+		"#    then delete the 347 MB installer; on failure keep the installer so it's easy to retry.\n" +
 		"if ($code -eq 0) {\n" +
 		"  foreach ($legacy in @('install.ps1', 'uninstall.ps1')) {\n" +
 		"    $f = Join-Path $root $legacy\n" +
-		"    if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; Say ('清掉旧脚本：' + $legacy) }\n" +
+		"    if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; Say ('Removed old script: ' + $legacy) }\n" +
 		"  }\n" +
 		"  foreach ($legacy in @('安装.cmd', '卸载.cmd')) {\n" +
 		"    $f = Join-Path $root $legacy\n" +
-		"    if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; Say ('清掉旧脚本：' + $legacy) }\n" +
+		"    if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; Say ('Removed old script: ' + $legacy) }\n" +
 		"  }\n" +
 		"  Remove-Item -LiteralPath $installer -Force -ErrorAction SilentlyContinue\n" +
 		"}\n" +
 		"\n" +
-		"# 5) 结果 + 把窗口还给主人（装砸了也把控制台按原样打开，别让人对着黑屏）\n" +
+		"# 5) Result + hand the window back to master (if it failed, reopen the console as before — don't leave a black screen)\n" +
 		"$okFlag = if ($code -eq 0) { '1' } else { '0' }\n" +
 		"Set-Content -LiteralPath $resultPath -Encoding UTF8 -Value @(('ok=' + $okFlag), ('exit=' + $code), ('from=' + $from), ('to=' + $to), ('at=' + (Get-Date -Format 's')), ('log=' + $logPath))\n" +
 		"$exe = Join-Path $root 'electron\\electron.exe'\n" +
 		"if ($code -eq 0 -and $petWasRunning) {\n" +
 		"  $start = Join-Path $root 'standalone\\start-pet.vbs'\n" +
-		"  if (Test-Path -LiteralPath $start) { & $wscript $start | Out-Null; Say '桌宠已重新启动' }\n" +
+		"  if (Test-Path -LiteralPath $start) { & $wscript $start | Out-Null; Say 'Pet restarted' }\n" +
 		"}\n" +
 		"if (Test-Path -LiteralPath $exe) {\n" +
 		"  Start-Process -FilePath $exe -ArgumentList ('\"' + $root + '\\launcher\"') -WorkingDirectory $root\n" +
-		"  Say '控制台已重新打开'\n" +
+		"  Say 'Console reopened'\n" +
 		"} else {\n" +
-		"  Say ('找不到 ' + $exe + '，请自己从桌面快捷方式打开控制台')\n" +
+		"  Say ('Could not find ' + $exe + '; open the console from the desktop shortcut yourself')\n" +
 		"}\n" +
-		"Say '收工'\n" +
+		"Say 'Done'\n" +
 		"try { Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue } catch { }\n" +
 		"try { Remove-Item -LiteralPath (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'apply-update.vbs') -Force -ErrorAction SilentlyContinue } catch { }\n"
 	);
@@ -564,16 +564,16 @@ function writeInstallDirKey(root) {
  */
 async function apply({ root, userRoot, installerPath, from = "", to = "", pid = 0, relaunchPet = false } = {}) {
 	if (!isInstalled(root)) {
-		return { ok: false, reason: "not-installed", message: "这份是源码运行（没有 electron\\electron.exe），更新请自己 git pull。" };
+		return { ok: false, reason: "not-installed", message: "This is a source checkout (no electron\\electron.exe) — update with git pull yourself." };
 	}
 	if (!installerPath || !fs.existsSync(installerPath)) {
-		return { ok: false, reason: "no-installer", message: "更新包不在本地，请先点「下载并更新」。" };
+		return { ok: false, reason: "no-installer", message: "The update package isn't local yet — click \"Download and update\" first." };
 	}
 	const dir = path.join(userRoot, "updates");
 	try {
 		fs.mkdirSync(dir, { recursive: true });
 	} catch (e) {
-		return { ok: false, reason: "no-dir", message: "建不了更新目录：" + String((e && e.message) || e) };
+		return { ok: false, reason: "no-dir", message: "Couldn't create the update directory:" + String((e && e.message) || e) };
 	}
 	const logPath = path.join(dir, `update-${to || "new"}.log`);
 	const resultPath = path.join(dir, "last-result.txt");
@@ -594,7 +594,7 @@ async function apply({ root, userRoot, installerPath, from = "", to = "", pid = 
 		fs.writeFileSync(vbsPath, buildVbsScript(), "ascii"); // 纯 ASCII，wscript 按系统码页读也安全
 		fs.writeFileSync(logPath, "", { flag: "a" });
 	} catch (e) {
-		return { ok: false, reason: "write-failed", message: "写更新脚本失败：" + String((e && e.message) || e) };
+		return { ok: false, reason: "write-failed", message: "Failed to write the update script:" + String((e && e.message) || e) };
 	}
 	await writeInstallDirKey(root);
 	try {
@@ -608,7 +608,7 @@ async function apply({ root, userRoot, installerPath, from = "", to = "", pid = 
 		});
 		child.unref();
 	} catch (e) {
-		return { ok: false, reason: "spawn-failed", message: "起不了更新脚本：" + String((e && e.message) || e) };
+		return { ok: false, reason: "spawn-failed", message: "Failed to start the update script:" + String((e && e.message) || e) };
 	}
 	return {
 		ok: true,
@@ -616,7 +616,7 @@ async function apply({ root, userRoot, installerPath, from = "", to = "", pid = 
 		log: logPath,
 		script: scriptPath,
 		vbs: vbsPath,
-		message: `马上关掉这个窗口开始装 ${to}，装好会自动开回来（日志：${logPath}）`,
+		message: `Closing this window now to install ${to}; it will reopen automatically (log: ${logPath})`,
 	};
 }
 

@@ -306,13 +306,13 @@ export function makePetUI(rt: {
           if (pendingRef.current?.gen !== gen) return; // 已被更新的切换覆盖
           pendingRef.current = null; // 释放挂起的 pending：后续点击不再被困在防重/覆盖循环里
           console.warn(
-            '[dsh-pet] 素材加载失败 pet=' +
+            '[dsh-pet] asset load failed pet=' +
               cfg.id +
               ' anim=' +
               next +
-              '：' +
+              ':' +
               (err instanceof Error ? err.message : String(err)) +
-              '（已释放本次切换）',
+              '(this switch was released)',
           );
         });
       const onReady = () => {
@@ -396,13 +396,13 @@ export function makePetUI(rt: {
       if (p === undefined) return; // 当前数据源没有百分比语义（如 DeepSeek 余额），不触发档位动画
       const pool = petAnims.events?.balance;
       if (!pool || pool.length === 0) {
-        console.error('[dsh-pet] 配置缺少 animations.events.balance，无法播放余额事件动画');
+        console.error('[dsh-pet] config is missing animations.events.balance; cannot play the balance event animation');
         return;
       }
       const idx = balanceEventIndex(p);
       const slot = pool[idx];
       if (!slot) {
-        console.error('[dsh-pet] balance 档位索引越界：p=' + p + ' idx=' + idx);
+        console.error('[dsh-pet] balance tier index out of range: p=' + p + ' idx=' + idx);
         return;
       }
       const name = pickSlot(slot, animRef.current); // 数组槽位档内随机抽 1，且避开当前正播动画（避免连续重复）
@@ -413,7 +413,7 @@ export function makePetUI(rt: {
           cfg.id +
           ' p=' +
           p.toFixed(1) +
-          '% -> [档' +
+          '% -> [tier' +
           idx +
           '] ' +
           name,
@@ -465,7 +465,7 @@ export function makePetUI(rt: {
             cfg.id +
             ' ' +
             (prevWorkStateRef.current ?? 'null') +
-            '->null    播完即停（回待机，收起气泡）',
+            '->null    play once and stop (back to idle, bubble hidden)',
         );
         prevWorkStateRef.current = null;
         // 回空闲：把正在**循环播**的进行中档位动画改成"播完即停"。
@@ -490,13 +490,13 @@ export function makePetUI(rt: {
       }
       const pool = petAnims.events?.workStatus;
       if (!pool || pool.length === 0) {
-        console.error('[dsh-pet] 配置缺少 animations.events.workStatus，无法播放工作状态动画');
+        console.error('[dsh-pet] config is missing animations.events.workStatus; cannot play the work-status animation');
         return;
       }
       const idx = WORK_STATUS_INDEX[workStatus.state];
       const slot = pool[idx];
       if (slot === undefined) {
-        console.error('[dsh-pet] work-status 档位索引越界：state=' + workStatus.state + ' idx=' + idx);
+        console.error('[dsh-pet] work-status tier index out of range: state=' + workStatus.state + ' idx=' + idx);
         return;
       }
       const name = pickSlot(slot, animRef.current); // 数组槽位档内随机抽 1，且避开当前正播动画（避免连续重复）
@@ -570,7 +570,7 @@ export function makePetUI(rt: {
             }
           } else {
             console.warn(
-              '[dsh-pet] 碎碎念生成失败 pet=' +
+              '[dsh-pet] chatter generation failed pet=' +
                 cfg.id +
                 ' reason=' +
                 state.reason +
@@ -578,7 +578,7 @@ export function makePetUI(rt: {
             );
           }
         } catch (e) {
-          if (alive) console.warn('[dsh-pet] 碎碎念拉取异常 pet=' + cfg.id, e);
+          if (alive) console.warn('[dsh-pet] chatter fetch error pet=' + cfg.id, e);
         }
       };
       void refresh();
@@ -640,7 +640,7 @@ export function makePetUI(rt: {
     const triggerWhisper = (text: string, image?: string) => {
       const pool = petAnims.events?.whisper;
       if (!pool || pool.length === 0) {
-        console.error('[dsh-pet] 配置缺少 animations.events.whisper，无法播放碎碎念动画');
+        console.error('[dsh-pet] config is missing animations.events.whisper; cannot play the chatter animation');
         return;
       }
       // 整池随机抽 1 槽（避开当前正播动画，避免连续重复）；槽位若为数组候选再档内随机
@@ -652,9 +652,9 @@ export function makePetUI(rt: {
           cfg.id +
           ' -> [' +
           name +
-          '] 「' +
+          '] "' +
           text +
-          '」',
+          '"',
       );
       stopMove();
       setWhisperText(text);
@@ -698,7 +698,7 @@ export function makePetUI(rt: {
         } else {
           kind = 'MOVES';
           // 成功返回具体动作名；占用中返回 true（已有一场移动在进行，不重播、不另设动画）
-          next = typeof moved === 'string' ? moved : '移动进行中(不重播)';
+          next = typeof moved === 'string' ? moved : 'moving (no replay)';
         }
       } else {
         const act = pickCategoryAction(animations.categories, animations.idle, facingRef.current, animRef.current);
@@ -737,7 +737,7 @@ export function makePetUI(rt: {
       if (slot === undefined) return false;
       const name = pickSlot(slot, animRef.current); // 互动结束后恢复档位循环：数组槽位档内随机（避开当前正播动画）
       console.log(
-        '[dsh-pet] ' + new Date().toTimeString().slice(0, 8) + ' pet=' + cfg.id + ' 互动结束恢复状态动画: ' + name,
+        '[dsh-pet] ' + new Date().toTimeString().slice(0, 8) + ' pet=' + cfg.id + ' interaction ended, restoring state animation: ' + name,
       );
       // 多候选档位恢复后同样走 ended 轮换（once=true 播一遍 → 护栏换下一候选）；单候选/单动画维持无限循环
       setOnce(Array.isArray(slot) && slot.length > 1);
@@ -766,7 +766,7 @@ export function makePetUI(rt: {
               new Date().toTimeString().slice(0, 8) +
               ' pet=' +
               cfg.id +
-              ' workStatus 档内轮换: ' +
+              ' workStatus tier rotate: ' +
               animRef.current +
               ' -> ' +
               nextWork,
@@ -783,7 +783,7 @@ export function makePetUI(rt: {
               new Date().toTimeString().slice(0, 8) +
               ' pet=' +
               cfg.id +
-              ' workStatus 循环续播: ' +
+              ' workStatus loop continue: ' +
               animRef.current,
           );
           setOnce(false);
@@ -798,7 +798,7 @@ export function makePetUI(rt: {
             new Date().toTimeString().slice(0, 8) +
             ' pet=' +
             cfg.id +
-            ' 事件动画播完 ended anim=' +
+            '  event animation finished, ended anim=' +
             animRef.current +
             ' ws=' +
             ((workStatusRef.current && workStatusRef.current.state) || 'null'),
@@ -1321,18 +1321,18 @@ export function makePetUI(rt: {
       if (leaf.action === 'whisper') {
         // 手动碎碎念：强制 host 立即新生成一句并展示（绕过节流缓存；失败显式告警，不伪造文案）。
         // 手动触发不受 whisperEnabled 限制——该字段只关自动周期轮询，手动永远可用。
-        console.info('[dsh-pet] 菜单触发碎碎念 pet=' + cfg.id);
+        console.info('[dsh-pet] menu-triggered chatter pet=' + cfg.id);
         fetchWhisperTrigger('/dsh-pet-7340/whisper/trigger?pet=' + encodeURIComponent(cfg.id))
           .then((state) => {
             if (state.ok) {
               triggerWhisper(state.text, state.image);
             } else {
               console.warn(
-                '[dsh-pet] 碎碎念手动触发失败 reason=' + state.reason + (state.message ? ' ' + state.message : ''),
+                '[dsh-pet] manual chatter trigger failed reason=' + state.reason + (state.message ? ' ' + state.message : ''),
               );
             }
           })
-          .catch((e) => console.warn('[dsh-pet] 碎碎念手动触发异常', e));
+          .catch((e) => console.warn('[dsh-pet] manual chatter trigger error', e));
         return;
       }
       if (leaf.action === 'chat') {
@@ -1349,7 +1349,7 @@ export function makePetUI(rt: {
           x: hitRect ? hitRect.right + 6 : window.innerWidth - 256,
           y: hitRect ? hitRect.top + 6 : 8,
           onReply: (reply, image) => {
-            console.info('[dsh-pet] 对话回复 pet=' + cfg.id + '「' + reply + '」' + (image ? ' [' + image + ']' : ''));
+            console.info('[dsh-pet] chat reply pet=' + cfg.id + '"' + reply + '"' + (image ? ' [' + image + ']' : ''));
             triggerWhisper(reply, image); // 复用碎碎念链路：随机说话动画 + 气泡 10s（含配图）
           },
           onClose: () => {
@@ -1388,9 +1388,9 @@ export function makePetUI(rt: {
       // 工具项（碎碎念——手动触发**不受 whisperEnabled 限制**，该字段只影响自动周期轮询；
       // 回到初始位置，两端共用）+ 动作树（动作→分类→具体动画）
       const tree: MenuNode[] = [
-        { label: '碎碎念', action: 'whisper' },
-        { label: '对话', action: 'chat' },
-        { label: '回到初始位置', action: 'home' },
+        { label: 'Chatter', action: 'whisper' },
+        { label: 'Chat', action: 'chat' },
+        { label: 'Back to start', action: 'home' },
         ...buildMenuTree(petAnims),
       ];
       if (!tree.length) return;
@@ -1514,7 +1514,7 @@ export function makePetUI(rt: {
       if (show) setBalanceNoticeTick((t) => t + 1); // 弹文字说明气泡（不播动画）
       // 未登记服务商是配置事实（已由气泡说明），不再刷 console；其余原因照旧显式报错，绝不伪造余额
       if (state.reason !== 'unsupported') {
-        console.error('[dsh-pet] 余额查询失败 reason=' + state.reason + (state.message ? ' ' + state.message : ''));
+        console.error('[dsh-pet] balance lookup failed reason=' + state.reason + (state.message ? ' ' + state.message : ''));
       }
     };
     // 工作状态：容器统一轮询 /work-status（任一宠物启用才启动），快照 + tick 递增驱动各宠物播档位动画
@@ -1533,7 +1533,7 @@ export function makePetUI(rt: {
         // 形状校验：host 版本不匹配 / 响应体异常时显式抛错（初始加载报错，重载保留当前列表），
         // 绝不用空列表把已有宠物清空
         if (typeof main !== 'object' || main === null) {
-          throw new Error('配置响应不是成品聚合（host 版本不匹配？）');
+          throw new Error('Config response is not the assembled result (host version mismatch?)');
         }
         const flattened = flattenConfigPets(merged);
         mainRefreshRef.current = (main.eventsRefreshSec as Record<string, number> | undefined) ?? {};
@@ -1555,7 +1555,7 @@ export function makePetUI(rt: {
           applyMerged(merged);
           setReady(true);
         } catch (e) {
-          console.error('[dsh-pet] 配置加载失败', e); // 成品拉取失败：显式报错，不静默隐藏
+          console.error('[dsh-pet] config load failed', e); // 成品拉取失败：显式报错，不静默隐藏
         }
       })();
       // 设置页保存/恢复默认后：host 已落盘，这里用权威成品重新拍平（传 merged 则直接用 PUT 的响应体，
@@ -1567,7 +1567,7 @@ export function makePetUI(rt: {
             if (!alive) return;
             applyMerged(next);
           } catch (e) {
-            console.error('[dsh-pet] 配置重载失败，保留当前渲染列表', e); // 显式报错，不清空已有宠物
+            console.error('[dsh-pet] config reload failed; keeping the current render list', e); // 显式报错，不清空已有宠物
           }
         })();
       };
@@ -1595,7 +1595,7 @@ export function makePetUI(rt: {
           if (!alive) return;
           applyBalanceRef.current(state, false);
         } catch (e) {
-          if (alive) console.error('[dsh-pet] 余额拉取异常', e);
+          if (alive) console.error('[dsh-pet] balance fetch error', e);
         }
       };
       void refresh();

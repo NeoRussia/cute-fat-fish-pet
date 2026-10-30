@@ -59,11 +59,11 @@ const CONTROL_TOKEN = crypto.randomBytes(24).toString("hex");
 /** 数据目录是怎么定下来的（命令行/体检里显示用；规则见 paths.mjs 的 dataRootInfo） */
 const DATA_NOTE =
 	PATHS.dataRootSource === "portable"
-		? "（便携模式：数据就在程序目录里）"
+		? "(portable mode: data lives inside the program folder)"
 		: PATHS.dataRootSource === "file"
-			? `（自定义：来自 ${PATHS.dataRootFile}）`
+			? `(custom: from ${PATHS.dataRootFile})`
 			: PATHS.dataRootSource === "env"
-				? "（自定义：来自环境变量 DSH_PET_DATA_DIR）"
+				? "(custom: from the DSH_PET_DATA_DIR environment variable)"
 				: "";
 
 /* 「完全独立」的注释保留在这里备查：以前默认把数据根锁在这份副本里（DSH_HOME=本副本）。
@@ -90,45 +90,7 @@ registerHooks({
 });
 
 /* ── 命令行 ──────────────────────────────────────────────────────────────── */
-const USAGE = `「${DISPLAY_NAME}」独立模式（不需要 DSH）
-
-用法：
-  node main.mjs [--port N] [--app <包目录>] [--check] [--selftest]
-
-日常不用敲命令：打开「${DISPLAY_NAME}」控制台就能启停（双击桌面快捷方式），
-也可以双击 start-pet.vbs 起、双击 stop-pet.vbs 停。
-已经在跑的时候再双击不会起第二只 —— 两只抢同一个 Chromium userData 会互踩。
-
-选项：
-  --port N        宿主路由服务端口（默认 ${DEFAULT_STANDALONE_PORT}；被占用则自动顺延，最多试 25 个）
-  --app <包目录>   插件包根目录（默认 ../app）
-  --check         只做体检并退出：包是否完整、默认配置在不在、Electron 能不能找到、数据目录在哪
-  --selftest      只测「模型那半边」：本机 Ollama 在不在、以及插件的三个契约
-                  （agentDefaultModel / attachments / llm.stream）能不能真的出话。
-                  不监听端口、不拉桌宠，纯只读。
-  -h, --help      显示本帮助
-
-运行时会写一份 runtime.json（pid / 端口 / 模型 / 启动时间），退出时删掉。
-
-环境变量：
-  DSH_HOME                用户数据目录（默认 %APPDATA%\\${APP_NAME}）——
-                          人设/记忆/屏幕状态在 <DSH_HOME>\\dsh-pet、Electron 在 <DSH_HOME>\\electron
-  DSH_PET_ELECTRON_PATH   指定 Electron 可执行文件（装好后默认用包内 electron\\electron.exe）
-  DSH_PET_STANDALONE_DEBUG=1  让 logger.debug 出声
-
-首次运行会自动铺默认人设，并在控制台里自动检测本机显卡/显存与 Ollama 模型，挑出合适的
-「聊天模型」和「看屏幕（视觉）模型」。
-
-用户数据放哪（可自定义，四条优先级从高到低）：
-  1) 环境变量 DSH_PET_DATA_DIR
-  2) 程序目录里的 data-root.txt（内容写一行路径，绝对路径或相对程序目录都行）
-  3) 程序目录里的 portable.txt  → 数据放「程序目录\\userdata」（便携模式）
-  4) 默认 %APPDATA%\BlueHairMaid\
-
-独立模式下可用：动画、物理拖拽、右键菜单、多开、自定义素材与宠物种类、屏幕监测、语音输入、
-                TTS、唱歌、AI 导演、全局大脑与碎碎念（模型走本机 Ollama 或联网模型）
-独立模式下不可用（会明确报错，不会假装成功）：余额查询（要 DSH 的凭证库）、DSH 会话工作状态、系统通知
-`;
+const USAGE = `"${DISPLAY_NAME}" standalone mode (no DSH required)\n\nUsage:\n  node main.mjs [--port N] [--app <package dir>] [--check] [--selftest]\n\nFor everyday use you don't type commands: open the "${DISPLAY_NAME}" console to start and stop (double-click the desktop shortcut),\nor double-click start-pet.vbs to start and stop-pet.vbs to stop.\nDouble-clicking again while running won't start a second pet — two pets sharing one Chromium userData would trample each other.\n\nOptions:\n  --port N        host route service port (default ${DEFAULT_STANDALONE_PORT}; if busy it advances automatically, up to 25 tries)\n  --app <dir>     plugin package root (default ../app)\n  --check         run the health check and exit: is the package complete, is the default config present, can Electron be found, where is the data folder\n  --selftest      only test the "model half": is local Ollama present, and can the plugin's three contracts\n                  (agentDefaultModel / attachments / llm.stream) really speak.\n                  Does not listen on a port or start the pet; purely read-only.\n  -h, --help      show this help\n\nWhile running it writes a runtime.json (pid / port / model / start time), removed on exit.\n\nEnvironment variables:\n  DSH_HOME                 user data folder (default %APPDATA%\\${APP_NAME}) —\n                           persona/memory/screen state in <DSH_HOME>\\dsh-pet, Electron in <DSH_HOME>\\electron\n  DSH_PET_ELECTRON_PATH    set the Electron executable (after install it uses the bundled electron\\electron.exe by default)\n  DSH_PET_STANDALONE_DEBUG=1   make logger.debug speak\n\nOn first run it seeds the default persona and auto-detects the GPU/VRAM and Ollama models in the console,\npicking a suitable "chat model" and "screen-watching (vision) model".\n\nWhere user data lives (customisable, four levels, high to low priority):\n  1) DSH_PET_DATA_DIR environment variable\n  2) data-root.txt in the program folder (one line: a path, absolute or relative to the program folder)\n  3) portable.txt in the program folder  → data goes to "program folder\\userdata" (portable mode)\n  4) default %APPDATA%\\BlueHairMaid\\\n\nAvailable in standalone mode: animations, physics dragging, right-click menu, multiple pets, custom assets and\n                pet kinds, screen watching, voice input, TTS, singing, AI director, global brain and chatter\n                (models go through local Ollama or the online model)\nNot available in standalone mode (fails clearly rather than pretending): balance lookup (needs DSH's credential\nstore), DSH session work status, system notifications\n`;
 
 function parseArgs(argv) {
 	const out = { port: DEFAULT_STANDALONE_PORT, app: DEFAULT_APP_DIR, check: false, selftest: false, help: false };
@@ -149,17 +111,17 @@ function parseArgs(argv) {
 		if (arg === "--port" || arg.startsWith("--port=")) {
 			const raw = arg === "--port" ? argv[++i] : arg.slice("--port=".length);
 			const n = Number.parseInt(String(raw ?? ""), 10);
-			if (!Number.isFinite(n) || n < 1 || n > 65535) return { error: `--port 需要一个 1..65535 的整数，收到：${String(raw)}` };
+			if (!Number.isFinite(n) || n < 1 || n > 65535) return { error: `--port needs an integer from 1 to 65535, got: ${String(raw)}` };
 			out.port = n;
 			continue;
 		}
 		if (arg === "--app" || arg.startsWith("--app=")) {
 			const raw = arg === "--app" ? argv[++i] : arg.slice("--app=".length);
-			if (!raw) return { error: "--app 需要一个目录" };
+			if (!raw) return { error: "--app needs a directory" };
 			out.app = resolve(String(raw));
 			continue;
 		}
-		return { error: `未知参数：${arg}` };
+		return { error: `Unknown argument: ${arg}` };
 	}
 	return out;
 }
@@ -305,17 +267,17 @@ function inspect(appDir) {
 	const helperPkg = join(appDir, "runtime", "electron-helper", "package.json");
 	const vendored = join(appDir, "node_modules", "@electron", "get");
 
-	add("包目录", existsSync(appDir), appDir);
+	add("Package folder", existsSync(appDir), appDir);
 	add("package.json", existsSync(pkgFile), pkgFile);
-	add("宿主半侧 lib/index.js", existsSync(hostFile), hostFile);
-	add("浏览器半侧 lib/client.js", existsSync(clientFile), clientFile);
-	add("包内默认配置 assets/config.jsonc", existsSync(configFile), configFile);
-	add("桌面 helper main.js", existsSync(helperFile), helperFile);
+	add("host side lib/index.js", existsSync(hostFile), hostFile);
+	add("browser side lib/client.js", existsSync(clientFile), clientFile);
+	add("bundled default config assets/config.jsonc", existsSync(configFile), configFile);
+	add("desktop helper main.js", existsSync(helperFile), helperFile);
 	add("helper package.json", existsSync(helperPkg), helperPkg);
-	add("内嵌依赖 @electron/get", existsSync(vendored), vendored);
+	add("bundled dependency @electron/get", existsSync(vendored), vendored);
 
 	const electron = findElectron();
-	add("Electron 可执行文件", Boolean(electron), electron ?? "未找到（可设 DSH_PET_ELECTRON_PATH）");
+	add("Electron executable", Boolean(electron), electron ?? "not found (set DSH_PET_ELECTRON_PATH)");
 
 	let version = "?";
 	try {
@@ -326,24 +288,24 @@ function inspect(appDir) {
 
 	/* 三个 DSH 包必须能被替身接住 —— 直接验证钩子生效 */
 	const shimsOk = [...ALIASES.values()].every((p) => existsSync(p));
-	add("三个 DSH 包替身", shimsOk, [...ALIASES.values()].join(" | "));
+	add("three DSH package shims", shimsOk, [...ALIASES.values()].join(" | "));
 
 	const home = dshHome();
-	add("数据根 DSH_HOME", true, home);
+	add("data root DSH_HOME", true, home);
 
 	return { checks, version, electron, configFile, home };
 }
 
 function printInspection(info) {
 	console.log("");
-	console.log("  体检结果");
+	console.log("  Check results");
 	console.log("  " + "-".repeat(66));
 	for (const c of info.checks) {
 		console.log(`  ${c.ok ? "[ OK ]" : "[FAIL]"}  ${c.name.padEnd(26)} ${c.detail}`);
 	}
 	console.log("  " + "-".repeat(66));
 	const bad = info.checks.filter((c) => !c.ok);
-	console.log(bad.length === 0 ? "  全部通过。" : `  ${bad.length} 项不通过，独立模式可能起不来。`);
+	console.log(bad.length === 0 ? "  All passed." : `  ${bad.length} failed; standalone mode may not start.`);
 	console.log("");
 }
 
@@ -360,9 +322,9 @@ async function selfTest() {
 	const probe = await listOllamaModels();
 	say(
 		probe.ok,
-		"本机 Ollama",
+		"Local Ollama",
 		probe.ok
-			? `${api}（${probe.models.length} 个模型：${probe.models.slice(0, 4).join("、")}${probe.models.length > 4 ? " …" : ""}）`
+			? `${api} (${probe.models.length} models: ${probe.models.slice(0, 4).join(", ")}${probe.models.length > 4 ? " …" : ""})`
 			: `${api} —— ${probe.reason}`,
 	);
 
@@ -371,12 +333,12 @@ async function selfTest() {
 		Boolean(sel?.provider && sel?.model),
 		"agentDefaultModel.currentSelection()",
 		sel?.model
-			? `${sel.provider} / ${sel.model}（取自 screen-watch/state.json 的 quipModel‖localModel）`
-			: "没有配本机模型（state.json 里 quipModel / localModel 都是空的）",
+			? `${sel.provider} / ${sel.model} (from quipModel‖localModel in screen-watch/state.json)`
+			: "No local model configured (quipModel / localModel are both empty in state.json)",
 	);
 
 	const att = ctx.get("attachments");
-	say(Boolean(att && typeof att.saveImages === "function"), 'ctx.get("attachments").saveImages', att ? "存在（屏幕监测能把截图塞进消息）" : "缺失");
+	say(Boolean(att && typeof att.saveImages === "function"), 'ctx.get("attachments").saveImages', att ? "present (screen watching can attach screenshots to messages)" : "Missing");
 
 	/* 文本出话：调用形状与 app/lib/index.js:207-224 完全一致 */
 	const model = sel?.model || currentModel();
@@ -386,17 +348,17 @@ async function selfTest() {
 		for await (const chunk of ctx.llm.stream({
 			provider,
 			model,
-			messages: [createUserMessage({ content: [{ type: "text", text: "用一句不超过 20 字的中文跟我打个招呼。" }], source: { kind: "user" } })],
-			system: "你是一只桌宠，回答要短，不要解释。",
+			messages: [createUserMessage({ content: [{ type: "text", text: "Say hello to me in one line, under 20 words." }], source: { kind: "user" } })],
+			system: "You are a desktop pet; keep replies short, no explanations.",
 			temperature: 1,
 			signal: AbortSignal.timeout(120000),
 		})) {
 			assembler.push(chunk);
 		}
 		const text = assembler.blocks().map((b) => (b.type === "text" ? b.text : "")).join("").trim();
-		say(Boolean(text), "llm.stream 文本出话", text ? `「${text}」` : "模型没有返回文本");
+		say(Boolean(text), "llm.stream text output", text ? `"${text}"` : "The model returned no text");
 	} catch (error) {
-		say(false, "llm.stream 文本出话", error instanceof Error ? error.message : String(error));
+		say(false, "llm.stream text output", error instanceof Error ? error.message : String(error));
 	}
 
 	/* 图片出话：屏幕监测那条路（attachments → {type:"image"} → Ollama images） */
@@ -413,33 +375,33 @@ async function selfTest() {
 					createUserMessage({
 						content: [
 							{ type: "image", attachment: refs[0] },
-							{ type: "text", text: "这张屏幕截图里主要是什么？一句话，不超过 25 字。" },
+							{ type: "text", text: "What is mainly in this screenshot? One line, under 25 words." },
 						],
 						source: { kind: "user" },
 					}),
 				],
-				system: "你是一只桌宠，看截图说话要短。",
+				system: "You are a desktop pet; keep screen comments short.",
 				temperature: 1,
 				signal: AbortSignal.timeout(180000),
 			})) {
 				vision.push(chunk);
 			}
 			const text = vision.blocks().map((b) => (b.type === "text" ? b.text : "")).join("").trim();
-			say(Boolean(text), "llm.stream 图片出话", text ? `「${text}」（截图 ${pixels.byteLength} B）` : "模型没有返回文本");
+			say(Boolean(text), "llm.stream image output", text ? `"${text}" (screenshot ${pixels.byteLength} B)` : "The model returned no text");
 		} catch (error) {
-			say(false, "llm.stream 图片出话", error instanceof Error ? error.message : String(error));
+			say(false, "llm.stream image output", error instanceof Error ? error.message : String(error));
 		}
 	} else {
-		say(true, "llm.stream 图片出话", `跳过：找不到 ${shot}`);
+		say(true, "llm.stream image output", `Skipped: ${shot} not found`);
 	}
 
 	console.log("");
-	console.log("  「蓝毛小女仆」独立模式 · 模型自检");
+	console.log("  \"Blue-Haired Little Maid\" standalone · model self-check");
 	console.log("  " + "-".repeat(72));
 	for (const row of rows) console.log(`  ${row.ok ? "[ OK ]" : "[FAIL]"}  ${row.name.padEnd(36)} ${row.detail}`);
 	console.log("  " + "-".repeat(72));
 	const bad = rows.filter((r) => !r.ok);
-	console.log(bad.length === 0 ? "  模型那半边通路正常：屏幕监测 / 碎碎念 / 对话 / AI 导演在独立模式下能出话。" : `  ${bad.length} 项不通过。`);
+	console.log(bad.length === 0 ? "  Model path is healthy: screen watching / chatter / chat / AI director can all speak in standalone mode." : `  ${bad.length} failed.`);
 	console.log("");
 	return bad.length;
 }
@@ -464,15 +426,15 @@ async function main() {
 	/* 首次运行：把 defaults\dsh-pet\ 里的默认人设/配置铺进用户数据目录（只补缺的，绝不覆盖已有） */
 	if (!options.check && !options.selftest) {
 		const seeded = seedUserData(PATHS);
-		if (seeded > 0) console.log(`[dsh-pet-standalone] 首次运行：已铺好默认数据 ${seeded} 个文件 → ${PATHS.dataRoot}`);
+		if (seeded > 0) console.log(`[dsh-pet-standalone] first run: seeded ${seeded} default data files → ${PATHS.dataRoot}`);
 	}
 	const info = inspect(appDir);
 
 	if (options.check) {
-		console.log(`「${DISPLAY_NAME}」独立模式 · 体检`);
-		console.log(`  包目录：${appDir}`);
-		console.log(`  数据目录：${PATHS.dataRoot}${DATA_NOTE}`);
-		console.log(`  运行时目录：${PATHS.userRoot}`);
+		console.log(`"${DISPLAY_NAME}" standalone · check`);
+		console.log(`  Package folder: ${appDir}`);
+		console.log(`  Data folder: ${PATHS.dataRoot}${DATA_NOTE}`);
+		console.log(`  Runtime folder: ${PATHS.userRoot}`);
 		printInspection(info);
 		if (info.checks.some((c) => !c.ok)) process.exitCode = 1;
 		return;
@@ -488,25 +450,25 @@ async function main() {
 	if (running && pidAlive(running.pid)) {
 		const health = await probeHealth(running.port);
 		if (health) {
-			console.log(`[dsh-pet-standalone] 已经在跑了，不重复启动。`);
-			console.log(`  pid ${running.pid} · 端口 ${running.port} · 启动于 ${running.startedAt ?? "?"} · 模型 ${running.provider ?? "?"} / ${running.model ?? "?"}`);
-			console.log(`  要重启：先 stop-pet.vbs / stop-pet.mjs，等它退干净再 start-pet.vbs。`);
+			console.log(`[dsh-pet-standalone] already running; not starting again.`);
+			console.log(`  pid ${running.pid} · port ${running.port} · started at ${running.startedAt ?? "?"} · model ${running.provider ?? "?"} / ${running.model ?? "?"}`);
+			console.log(`  To restart: run stop-pet.vbs / stop-pet.mjs first, wait for it to fully exit, then start-pet.vbs.`);
 			return;
 		}
-		logger.warn(`runtime.json 记着 pid ${running.pid}，进程还在但 /health 不通（${running.port}）——按「上次没退干净」处理，继续启动。`);
+		logger.warn(`runtime.json records pid ${running.pid}; the process is alive but /health doesn't answer (${running.port}) — treating it as not fully exited and continuing to start.`);
 	}
 
 	/* 上游 cli.ts 同款预检：包内默认配置缺失就直接退出，别跑到一半才炸 */
 	const defaultConfig = join(appDir, "assets", "config.jsonc");
 	if (!existsSync(defaultConfig)) {
-		console.error(`[dsh-pet-standalone] 包内默认配置缺失：${defaultConfig}`);
-		console.error("  这个副本不完整，请先用 verify.mjs 校验，或从 snapshot/ 还原。");
+		console.error(`[dsh-pet-standalone] bundled default config missing: ${defaultConfig}`);
+		console.error("  This copy is incomplete; run verify.mjs, or restore from snapshot/.");
 		process.exitCode = 1;
 		return;
 	}
 	const hostEntry = join(appDir, "lib", "index.js");
 	if (!existsSync(hostEntry)) {
-		console.error(`[dsh-pet-standalone] 找不到宿主半侧入口：${hostEntry}`);
+		console.error(`[dsh-pet-standalone] host entry not found: ${hostEntry}`);
 		process.exitCode = 1;
 		return;
 	}
@@ -523,11 +485,11 @@ async function main() {
 	const shutdown = async (reason) => {
 		if (shuttingDown) return;
 		shuttingDown = true;
-		console.log(`\n[dsh-pet-standalone] 收尾中（${reason}）…`);
+		console.log(`\n[dsh-pet-standalone] shutting down (${reason})…`);
 		try {
 			context.dispose();
 		} catch (error) {
-			logger.error("dispose 失败：" + (error instanceof Error ? error.message : String(error)));
+			logger.error("dispose failed:" + (error instanceof Error ? error.message : String(error)));
 		}
 		try {
 			await server.close();
@@ -572,10 +534,10 @@ async function main() {
 	process.on("SIGINT", () => void shutdown("SIGINT"));
 	process.on("SIGTERM", () => void shutdown("SIGTERM"));
 	process.on("uncaughtException", (error) => {
-		logger.error("uncaughtException：" + (error?.stack ?? String(error)));
+		logger.error("uncaughtException:" + (error?.stack ?? String(error)));
 	});
 	process.on("unhandledRejection", (reason) => {
-		logger.error("unhandledRejection：" + (reason instanceof Error ? reason.stack : String(reason)));
+		logger.error("unhandledRejection:" + (reason instanceof Error ? reason.stack : String(reason)));
 	});
 
 	/* 现在才加载插件：此时钩子已装好、端口已就绪 */
@@ -583,7 +545,7 @@ async function main() {
 	const apply = mod?.apply ?? mod?.default?.apply;
 	if (typeof apply !== "function") {
 		await server.close();
-		throw new Error(`宿主半侧没有导出 apply()：${hostEntry}`);
+		throw new Error(`host side did not export apply(): ${hostEntry}`);
 	}
 
 	apply(context.ctx);
@@ -593,42 +555,42 @@ async function main() {
 
 	console.log("");
 	console.log("  ╭──────────────────────────────────────────────────────────────╮");
-	console.log("  │  蓝毛小女仆 · 独立模式                                        │");
+	console.log("  │  Blue-Haired Little Maid · standalone                                        │");
 	console.log("  ╰──────────────────────────────────────────────────────────────╯");
-	console.log(`  包版本        ${info.version}   (${appDir})`);
-	console.log(`  路由服务      ${base}   （${routes.length} 条路由）`);
+	console.log(`  Package version ${info.version}   (${appDir})`);
+	console.log(`  Route service   ${base}   (${routes.length} routes)`);
 	for (const r of routes) console.log(`                  ${r.kind.padEnd(7)} ${r.path}`);
-	console.log(`  健康检查      ${base}/health`);
-	console.log(`  数据根        ${PATHS.dataRoot}${DATA_NOTE}`);
+	console.log(`  Health check    ${base}/health`);
+	console.log(`  Data root       ${PATHS.dataRoot}${DATA_NOTE}`);
 	if (DEVICE_PROFILE?.picks) {
-		const gb = DEVICE_PROFILE.vramMB ? `${(DEVICE_PROFILE.vramMB / 1024).toFixed(1)} GB 显存` : "没读到显存";
-		console.log(`  自动适配      ${gb} → 聊天 ${DEVICE_PROFILE.picks.chat || "?"} / 看屏幕 ${DEVICE_PROFILE.picks.vision || "?"}`);
+		const gb = DEVICE_PROFILE.vramMB ? `${(DEVICE_PROFILE.vramMB / 1024).toFixed(1)} GB VRAM` : "VRAM not readable";
+		console.log(`  Auto-fit        ${gb} → chat ${DEVICE_PROFILE.picks.chat || "?"} / watch ${DEVICE_PROFILE.picks.vision || "?"}`);
 	}
-	console.log(`  桌面宠物      ${pets.map((p) => `${p.id}${p.name ? `(${p.name})` : ""}`).join(", ") || "(默认：config.jsonc 里 display=desktop/both 的条目)"}`);
-	console.log(`  Electron      ${info.electron ?? "未找到"}`);
+	console.log(`  Desktop pets    ${pets.map((p) => `${p.id}${p.name ? `(${p.name})` : ""}`).join(", ") || "(default: entries with display=desktop/both in config.jsonc)"}`);
+	console.log(`  Electron        ${info.electron ?? "not found"}`);
 	console.log(
-		`  本机模型      ${model ? `${provider} / ${model}` : "未配置（state.json 里 quipModel / localModel 是空的）"}` +
-			`   ${modelProbe.ok ? `Ollama 在线（${modelProbe.models.length} 个模型）` : `Ollama 未响应：${modelProbe.reason}`}`,
+		`  Local model     ${model ? `${provider} / ${model}` : "not configured (quipModel / localModel in state.json are empty)"}` +
+			`   ${modelProbe.ok ? `Ollama online (${modelProbe.models.length} models)` : `Ollama not responding: ${modelProbe.reason}`}`,
 	);
-	console.log(`  已建立 effect ${context.effectCount} 个`);
+	console.log(`  created ${context.effectCount} effect(s)`);
 	if (context.failures.length > 0) {
-		console.log("  注意：以下初始化失败（已按插件的降级路径继续）");
+		console.log("  note: the following initialisation steps failed (continued via the plugin's fallback paths)");
 		for (const f of context.failures) console.log(`    · ${f}`);
 	}
 	console.log("");
-	console.log("  独立模式下不可用（需要 DSH 的凭证 / 会话，会明确报错而不会假装成功）：");
-	console.log("    · 余额查询      · DSH 会话工作状态      · 系统通知");
-	console.log("  其余功能都可用：动画、拖拽、右键菜单、多开、屏幕监测、语音输入、TTS、唱歌、AI 导演、碎碎念、对话；");
-	console.log("  其中「会出话」的那几个走本机 Ollama（离线、不花额度）。");
+	console.log("  Not available in standalone mode (needs DSH credentials / session; reports clearly rather than pretending):");
+	console.log("    · balance lookup      · DSH session work status      · system notifications");
+	console.log("  Everything else works: animations, dragging, right-click menu, multiple pets, screen watching, voice input, TTS, singing, AI director, chatter, chat;");
+	console.log("  The speech-capable ones use local Ollama (offline, no quota).");
 	console.log("");
-	console.log("  退出：关掉这个窗口，或 Ctrl+C，或双击 stop-pet.vbs（命令行里是 node standalone\\stop-pet.mjs）");
+	console.log("  Exit: close this window, or Ctrl+C, or double-click stop-pet.vbs (node standalone\\stop-pet.mjs in a terminal)");
 	console.log("");
 }
 
 const isMain = import.meta.main === true || (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url));
 if (isMain) {
 	main().catch((error) => {
-		console.error("[dsh-pet-standalone] 启动失败：" + (error?.stack ?? String(error)));
+		console.error("[dsh-pet-standalone] startup failed: " + (error?.stack ?? String(error)));
 		process.exitCode = 1;
 	});
 }

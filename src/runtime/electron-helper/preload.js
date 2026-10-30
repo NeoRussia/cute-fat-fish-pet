@@ -108,7 +108,7 @@ contextBridge.exposeInMainWorld('petBridge', {
   },
   voiceTranscribe(pcm, lang) {
     // 语言只认 'zh' / 'auto'（默认 zh）：渲染端的值在这里收一次口，主进程还会再收一次
-    return ipcRenderer.invoke('pet:voice-transcribe', { pcm, lang: lang === 'auto' ? 'auto' : 'zh' });
+    return ipcRenderer.invoke('pet:voice-transcribe', { pcm, lang: lang === 'auto' ? 'auto' : 'en' });
   },
   // [local patch V] 自检留录音：把这段 16k 单声道 PCM 覆盖写到固定路径（路径主进程写死，渲染端给不了）
   voiceSelfTestWav(pcm) {
@@ -124,7 +124,7 @@ contextBridge.exposeInMainWorld('petBridge', {
     const o = opts && typeof opts === 'object' ? opts : {};
     return ipcRenderer.invoke('pet:tts-speak', { text: String(text === null || text === undefined ? '' : text), voice: o.voice, rate: o.rate }).then((r) => {
       const m = r && r.ok === true ? (r.mp3 || r.data) : null;
-      if (!m) return { ok: false, error: (r && r.error) || 'TTS 没有返回音频' };
+      if (!m) return { ok: false, error: (r && r.error) || 'TTS returned no audio' };
       // Buffer 常常是 buffer pool 的一片：byteOffset/byteLength 必须都算上，绝不能整个 .buffer 交出去
       const u8 = m instanceof ArrayBuffer ? new Uint8Array(m) : new Uint8Array(m.buffer, m.byteOffset, m.byteLength);
       return { ok: true, mp3: u8, bytes: u8.byteLength, ms: r.ms || 0, voice: r.voice || '' };

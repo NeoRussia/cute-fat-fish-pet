@@ -303,7 +303,7 @@ export function apply(ctx: any): void {
       return parsed as Record<string, Record<string, { messages: ChatMemoryMessage[] }>>;
     } catch (e) {
       console.error(
-        `dsh-pet: 记忆文件损坏已备份（对话将从头开始）：${memoryPath}（${e instanceof Error ? e.message : String(e)}）`,
+        `dsh-pet: memory file was corrupted and has been backed up (chat starts over): ${memoryPath} (${e instanceof Error ? e.message : String(e)})`,
       );
       try {
         await mkdir(userRoot, { recursive: true });
@@ -339,7 +339,7 @@ export function apply(ctx: any): void {
     const conf = found ? found.conf : (cfg.main ?? {});
     const prompt = typeof conf.whisperPrompt === 'string' ? conf.whisperPrompt : '';
     const name = found ? String(found.pet.name || found.pet.id || petId) : petId;
-    const nameLine = '你的名字是“' + name + '”。';
+    const nameLine = 'Your name is "' + name + '".';
     return prompt ? prompt + '\n' + nameLine : nameLine;
   };
 
@@ -455,7 +455,7 @@ export function apply(ctx: any): void {
     try {
       hasDesktopPet = effectivePetList().some((p) => isDesktopVisible(p.display));
     } catch (e) {
-      ctx.logger?.warn?.(`[dsh-pet] 宠物配置非法，桌面模式已跳过：${e instanceof Error ? e.message : String(e)}`);
+      ctx.logger?.warn?.(`[dsh-pet] invalid pet config; desktop mode skipped: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
   refreshDesktop();
@@ -550,8 +550,8 @@ export function apply(ctx: any): void {
       if (!displayWarned) {
         displayWarned = true;
         ctx.logger?.warn?.(
-          '[dsh-pet] 未检测到图形显示环境（DISPLAY/WAYLAND_DISPLAY 均为空），已跳过桌面宠物。' +
-            '浏览器内宠物不受影响；如需在服务器上启用桌面模式，请配置 Xvfb 后设置 DSH_PET_DESKTOP_FORCE=1。',
+          '[dsh-pet] No graphical display detected (DISPLAY/WAYLAND_DISPLAY are both empty); desktop pet skipped.' +
+            'In-browser pets are unaffected. To enable desktop mode on a server, configure Xvfb and set DSH_PET_DESKTOP_FORCE=1.',
         );
       }
       return;
@@ -615,7 +615,7 @@ export function apply(ctx: any): void {
         startHelper();
       })
       .catch((e: unknown) => {
-        ctx.logger?.warn?.(`[dsh-pet] 重启桌面 Helper 失败：${e instanceof Error ? e.message : String(e)}`);
+        ctx.logger?.warn?.(`[dsh-pet] failed to restart the desktop helper: ${e instanceof Error ? e.message : String(e)}`);
       });
     return desktopSyncQueue;
   };
@@ -665,7 +665,7 @@ export function apply(ctx: any): void {
               status: 400,
               obj: {
                 error:
-                  'invalid pet config: expected { pets:[{name?,id,size,balanceEnabled,display,position:{corner,marginX,marginY}}] }（display 为 web/desktop/both/none 之一；可选顶层 notificationsEnabled / whisperImageEnabled / chatImageEnabled 布尔）',
+                  'invalid pet config: expected { pets:[{name?,id,size,balanceEnabled,display,position:{corner,marginX,marginY}}] } (display is one of web/desktop/both/none; optional top-level notificationsEnabled / whisperImageEnabled / chatImageEnabled booleans)',
               },
             };
           }
@@ -807,13 +807,13 @@ export function apply(ctx: any): void {
           const parsed = (JSON.parse(body ?? 'null') as Record<string, unknown> | null) ?? {};
           const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
           if (!text) {
-            return { kind: 'json', status: 200, obj: { ok: false, reason: 'bad-request', message: '消息为空' } };
+            return { kind: 'json', status: 200, obj: { ok: false, reason: 'bad-request', message: 'Message is empty' } };
           }
           if (text.length > 2000) {
             return {
               kind: 'json',
               status: 200,
-              obj: { ok: false, reason: 'bad-request', message: '消息过长（限 2000 字）' },
+              obj: { ok: false, reason: 'bad-request', message: 'Message too long (2000 characters max)' },
             };
           }
           const result = await chatWithPet(petId, text);
@@ -1085,10 +1085,10 @@ export function apply(ctx: any): void {
     () =>
       ctx.commands.register({
         name: 'balance',
-        description: '手动触发桌宠余额显示（立即弹出余额气泡）',
+        description: 'Manually show the pet\'s balance (pops the balance bubble immediately)',
         handler: () => {
           balanceTriggerCount += 1;
-          return { kind: 'success', text: '已触发桌宠余额显示' };
+          return { kind: 'success', text: 'Pet balance display triggered' };
         },
       }),
     'dsh-pet: /balance command',
@@ -1101,8 +1101,8 @@ export function apply(ctx: any): void {
     () =>
       ctx.commands.register({
         name: 'pet',
-        description: '选择桌宠（/chat 对话的目标；支持选择框或手输 id/名字）',
-        input: { hint: '[宠物 id 或名字]（留空查看当前）' },
+        description: 'Choose a pet (the target for /chat; picker or type an id/name)',
+        input: { hint: '[pet id or name] (leave blank to see the current one)' },
         handler: ({ rawInput }: { rawInput: string }) => {
           const arg = rawInput.trim();
           let eff: Record<string, unknown>[];
@@ -1116,33 +1116,33 @@ export function apply(ctx: any): void {
             const found = eff.find((p) => String(p.id) === cur);
             return {
               kind: 'success',
-              text: '当前桌宠：' + (found ? petDisplayName(found) : cur || '（无可交互桌宠）'),
+              text: 'Current pet: ' + (found ? petDisplayName(found) : cur || '(no interactive pet)'),
             };
           }
           const byId = eff.find((p) => String(p.id) === arg);
           if (byId) {
             activePetId = String(byId.id);
-            return { kind: 'success', text: '已选择桌宠：' + petDisplayName(byId) };
+            return { kind: 'success', text: 'Selected pet: ' + petDisplayName(byId) };
           }
           const byName = eff.filter((p) => petDisplayName(p) === arg);
           if (byName.length === 1) {
             activePetId = String(byName[0].id);
-            return { kind: 'success', text: '已选择桌宠：' + petDisplayName(byName[0]) };
+            return { kind: 'success', text: 'Selected pet: ' + petDisplayName(byName[0]) };
           }
           if (byName.length > 1) {
             return {
               kind: 'error',
               text:
-                '「' +
+                '"' +
                 arg +
-                '」有 ' +
+                '" has ' +
                 byName.length +
-                ' 只桌宠（id：' +
-                byName.map((p) => String(p.id)).join('、') +
-                '），请用 id 指定',
+                ' pets (id: ' +
+                byName.map((p) => String(p.id)).join(', ') +
+                '); specify one by id',
             };
           }
-          return { kind: 'error', text: '找不到桌宠「' + arg + '」（id 或名字都行；/pet 回车可打开选择框）' };
+          return { kind: 'error', text: 'Pet not found: "' + arg + '" (id or name; press Enter on /pet for the picker)' };
         },
       }),
     'dsh-pet: /pet command',
@@ -1155,31 +1155,31 @@ export function apply(ctx: any): void {
     () =>
       ctx.commands.register({
         name: 'chat',
-        description: '与桌宠对话：留空 = 碎碎念一句；输入消息 = 正常对话',
-        input: { hint: '[消息]（留空 = 碎碎念）' },
+        description: 'Chat with the pet: blank = one idle line; a message = a normal chat',
+        input: { hint: '[message] (blank = idle chatter)' },
         handler: async ({ rawInput }: { rawInput: string }) => {
           const petId = resolveActivePetId();
-          if (!petId) return { kind: 'error', text: '没有可交互的桌宠' };
+          if (!petId) return { kind: 'error', text: 'No interactive pet' };
           const text = rawInput.trim();
           try {
             if (!text) {
               // 碎碎念：force=true 立即生成并刷新周期缓存（同宠物两端轮询 /whisper 也会跟着展示）
               const w = await serveWhisper(petId, true);
               if (!w.ok) {
-                return { kind: 'error', text: '碎碎念生成失败' + (w.message ? '：' + w.message : '') };
+                return { kind: 'error', text: 'Chatter generation failed' + (w.message ? ':' + w.message : '') };
               }
               broadcastTo(petId, w.text ?? '', w.image);
               return { kind: 'success', text: w.text ?? '' };
             }
-            if (text.length > 2000) return { kind: 'error', text: '消息过长（限 2000 字）' };
+            if (text.length > 2000) return { kind: 'error', text: 'Message too long (2000 characters max)' };
             const r = await chatWithPet(petId, text);
             if (!r.ok) {
-              return { kind: 'error', text: '对话失败' + (r.message ? '：' + r.message : '') };
+              return { kind: 'error', text: 'Chat failed' + (r.message ? ':' + r.message : '') };
             }
             broadcastTo(petId, r.reply, r.image);
             return { kind: 'success', text: r.reply };
           } catch (e) {
-            return { kind: 'error', text: '对话失败：' + (e instanceof Error ? e.message : String(e)) };
+            return { kind: 'error', text: 'Chat failed: ' + (e instanceof Error ? e.message : String(e)) };
           }
         },
       }),

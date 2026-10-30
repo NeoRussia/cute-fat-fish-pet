@@ -156,7 +156,7 @@ let engineMs = 0;
  *  lang: 'zh'（默认）或 'auto'。**换语言必须重建引擎**：sensevoice 那层自己的缓存键是
  *  native|model（不含 lang），光改参数不会真的换语言 —— 这里自己记着当前引擎是哪门语言。 */
 function loadEngine(lang) {
-  const want = lang === 'auto' ? 'auto' : 'zh';
+  const want = lang === 'auto' ? 'auto' : 'en';
   if (engine && engineLang === want) return engine;
   if (engine) engine = null; // 换语言：丢掉旧引擎重建（进程里只留一个）
   const t0 = Date.now();
@@ -244,7 +244,7 @@ function loadVad() {
     return vadHandle;
   } catch (e) {
     vadWhy = String((e && e.message) || e);
-    process.stderr.write('[stt-worker] silero vad 不可用，退回逐段直送: ' + vadWhy + '\n');
+    process.stderr.write('[stt-worker] silero vad unavailable, sending segments directly: ' + vadWhy + '\n');
     return null;
   }
 }
@@ -304,7 +304,7 @@ function voiceCoreTranscribe(sherpa, samples, v, decode) {
       speech = voiceVadSpeech(sherpa, v, boosted.samples);
     } catch (e) {
       // VAD 中途出错：如实记下来，但别把整句弄丢 —— 退回直送
-      process.stderr.write('[stt-worker] vad 出错，这一段直送引擎: ' + String((e && e.message) || e) + '\n');
+      process.stderr.write('[stt-worker] vad error; sending this segment straight to the engine: ' + String((e && e.message) || e) + '\n');
       speech = null;
     }
   }

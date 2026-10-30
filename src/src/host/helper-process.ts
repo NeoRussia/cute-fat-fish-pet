@@ -388,7 +388,7 @@ export class HelperProcess {
     try {
       req = JSON.parse(line.slice(BRIDGE_PREFIX.length)) as BridgeRequest;
     } catch {
-      this.logger.warn?.('[dsh-pet desktop helper] bridge 协议行非法，已忽略');
+      this.logger.warn?.('[dsh-pet desktop helper] invalid bridge protocol line; ignored');
       return;
     }
     if (typeof req.id !== 'number') return;
@@ -455,7 +455,7 @@ export class HelperProcess {
     const child = this.child;
     if (!child) return;
     await waitForChildExit(child, timeoutMs, () => {
-      this.logger.warn?.(`dsh-pet desktop helper 未在 ${timeoutMs}ms 内退出，升级 SIGKILL（${reason}）`);
+      this.logger.warn?.(`dsh-pet desktop helper did not exit within ${timeoutMs}ms; escalating to SIGKILL (${reason})`);
       try {
         child.kill('SIGKILL');
       } catch {

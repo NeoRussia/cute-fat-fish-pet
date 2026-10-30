@@ -28,7 +28,7 @@
 function showError(message) {
   console.error('[dsh-pet] ' + message);
   window.__dshPetDebug.configOk = false;
-  errorEl.textContent = 'dsh-pet 配置错误：' + message;
+  errorEl.textContent = 'dsh-pet config error:' + message;
   errorEl.classList.add('visible');
 }
 function hideError() {
@@ -66,14 +66,14 @@ async function boot() {
     hideError();
     const pets = cfg.pets.filter((p) => S.isDesktopVisible(p.display));
     if (pets.length === 0) {
-      showError('配置中没有 display 为 desktop/both 的宠物，桌面模式不显示宠物');
+      showError('No pet in the config has display desktop/both; desktop mode shows no pet');
       scheduleReboot();
       return;
     }
     // 本窗口只承载一只宠物：petIndex 由主进程按 DSH_PET_PETS 顺序注入
     const pet = pets[CONFIG.petIndex];
     if (!pet) {
-      showError('petIndex=' + CONFIG.petIndex + ' 超出桌面宠物列表（共 ' + pets.length + ' 只），本窗口不创建宠物');
+      showError('petIndex=' + CONFIG.petIndex + ' beyond the pet list (total ' + pets.length + '); this window creates no pet');
       scheduleReboot();
       return;
     }
@@ -84,7 +84,7 @@ async function boot() {
     for (const s of sprites) s.playIdle();
     startLoops();
   } catch (e) {
-    showError('配置加载失败：' + (e && e.message ? String(e.message) : String(e)));
+    showError('Config load failed:' + (e && e.message ? String(e.message) : String(e)));
     scheduleReboot();
   }
 }
@@ -96,7 +96,7 @@ function injectAssets() {
     '@font-face{font-family:"ShangshouSoftCandy";src:url("' +
     BASE +
     '/font/' +
-    encodeURIComponent('上首软糖体') +
+    encodeURIComponent('ShangshouSoftCandy') +
     '.ttf") format("truetype");font-display:swap;font-weight:400}' +
     '.pet-hit{cursor:url("' +
     BASE +

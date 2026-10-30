@@ -33,7 +33,7 @@ export const ONLINE_CONFIG_PATH = join(HERE, "online.json");
 
 const DEFAULTS = {
 	enabled: false,
-	name: "联网模型",
+	name: "Online model",
 	baseUrl: "https://api.deepseek.com",
 	apiKey: "",
 	model: "deepseek-chat",
@@ -140,16 +140,16 @@ function thinkingOff(baseUrl, model) {
 }
 
 const CN_ERROR = {
-	401: "密钥不对或过期（HTTP 401）",
-	402: "余额不足（HTTP 402）",
-	403: "没有权限访问这个模型（HTTP 403）",
-	404: "地址或模型名不对（HTTP 404）",
-	429: "请求太频繁 / 配额用完了（HTTP 429）",
+	401: "Key wrong or expired (HTTP 401)",
+	402: "Insufficient balance (HTTP 402)",
+	403: "No access to this model (HTTP 403)",
+	404: "Wrong address or model name (HTTP 404)",
+	429: "Too many requests / quota exhausted (HTTP 429)",
 };
 
 export async function onlineChat(options = {}) {
 	const cfg = readOnlineConfig();
-	if (!onlineReady(cfg)) return { ok: false, reason: "provider-missing", message: "独立模式：还没配联网模型（在控制台的「联网模型」里填地址、密钥、模型名）" };
+	if (!onlineReady(cfg)) return { ok: false, reason: "provider-missing", message: "Standalone mode: no online model yet (fill in address, key and model name under \"Online model\" in the console)" };
 
 	/* 带图 = 看屏幕：走视觉那套；没配齐就当场说清楚，绝不把图发给纯文本模型 */
 	const withImage = wantsImage(options);
@@ -158,7 +158,7 @@ export async function onlineChat(options = {}) {
 		return {
 			ok: false,
 			reason: "vision-missing",
-			message: "还没配「看屏幕」的视觉模型：去控制台「联网模型」里填视觉模型名（接口地址 / Key 留空就跟聊天共用那套）",
+			message: "No vision model for screen watching yet: fill in the vision model name in the console under \"Online model\" (leave address/key blank to share the chat one)",
 		};
 	}
 	const url = endpoint(withImage ? v.base : cfg.baseUrl);
@@ -189,19 +189,19 @@ export async function onlineChat(options = {}) {
 			signal: signals.length > 1 ? AbortSignal.any(signals) : signals[0],
 		});
 	} catch (error) {
-		return { ok: false, reason: "generate-error", message: "联网模型没连上（" + url + "）：" + (error instanceof Error ? error.message : String(error)) };
+		return { ok: false, reason: "generate-error", message: "Online model not reachable (" + url + "): " + (error instanceof Error ? error.message : String(error)) };
 	}
 	if (!res.ok) {
 		const detail = await res.text().catch(() => "");
 		const known = CN_ERROR[res.status] ?? `HTTP ${res.status}`;
-		return { ok: false, reason: "generate-error", message: `联网模型返回 ${known}${detail ? "：" + detail.slice(0, 200) : ""}` };
+		return { ok: false, reason: "generate-error", message: `Online model returned ${known}${detail ? ": " + detail.slice(0, 200) : ""}` };
 	}
 
 	let json;
 	try {
 		json = await res.json();
 	} catch (error) {
-		return { ok: false, reason: "generate-error", message: "联网模型返回的不是 JSON：" + (error instanceof Error ? error.message : String(error)) };
+		return { ok: false, reason: "generate-error", message: "Online model returned non-JSON:" + (error instanceof Error ? error.message : String(error)) };
 	}
 
 	const message = json?.choices?.[0]?.message ?? {};
@@ -214,10 +214,10 @@ export async function onlineChat(options = {}) {
 		return {
 			ok: false,
 			reason: "thinking-only",
-			message: "联网模型只想了、没写正文：把预算调大，或在控制台换一个不思考的模型",
+			message: "Online model only thought and wrote nothing: raise the budget, or switch to a non-reasoning model in the console",
 		};
 	}
-	return { ok: false, reason: "generate-error", message: "联网模型没返回文本" + (json?.error?.message ? "：" + String(json.error.message).slice(0, 200) : "") };
+	return { ok: false, reason: "generate-error", message: "Online model returned no text" + (json?.error?.message ? ":" + String(json.error.message).slice(0, 200) : "") };
 }
 
 /** 契约是 AsyncIterable（见 context.mjs 文件头教训 ①），必须手写迭代器 */
@@ -234,7 +234,7 @@ export function onlineStream(options = {}) {
 /** GET /models：控制台「拉取模型列表」用（不是所有端点都支持，失败不算错） */
 export async function listOnlineModels(timeoutMs = 8000) {
 	const cfg = readOnlineConfig();
-	if (!String(cfg.apiKey).trim()) return { ok: false, reason: "没填密钥", models: [] };
+	if (!String(cfg.apiKey).trim()) return { ok: false, reason: "No key filled in", models: [] };
 	const base = String(cfg.baseUrl || "").trim().replace(/\/+$/, "").replace(/\/chat\/completions$/, "");
 	try {
 		const res = await fetch(base + "/models", { headers: { authorization: "Bearer " + String(cfg.apiKey).trim() }, signal: AbortSignal.timeout(timeoutMs) });
@@ -259,13 +259,13 @@ export async function onlinePing(timeoutMs = 20000, which = "chat") {
 	if (useVision) {
 		const v = visionTarget(cfg);
 		if (!v.base || !v.key || !v.model) {
-			return { ok: false, reason: "vision-missing", message: "视觉模型还没配齐：模型名必填（接口地址 / Key 留空会用聊天那套）", ms: 0 };
+			return { ok: false, reason: "vision-missing", message: "Vision model not fully configured: model name is required (address/key left blank will use the chat one)", ms: 0 };
 		}
 		const startedV = Date.now();
 		const result = await onlineChatTo({ base: v.base, key: v.key, model: v.model }, timeoutMs);
 		return { ...result, ms: Date.now() - startedV };
 	}
-	const result = await onlineChat({ messages: [{ role: "user", content: [{ type: "text", text: "只回两个字：在的" }] }], system: "只回两个字：在的", numPredict: 16, timeoutMs });
+	const result = await onlineChat({ messages: [{ role: "user", content: [{ type: "text", text: "Reply with one word: here" }] }], system: "Reply with one word: here", numPredict: 16, timeoutMs });
 	return { ...result, ms: Date.now() - started };
 }
 
@@ -274,7 +274,7 @@ async function onlineChatTo(target, timeoutMs = 20000) {
 	const url = endpoint(target.base);
 	const body = {
 		model: target.model,
-		messages: [{ role: "system", content: "只回两个字：在的" }, { role: "user", content: "只回两个字：在的" }],
+		messages: [{ role: "system", content: "Reply with one word: here" }, { role: "user", content: "Reply with one word: here" }],
 		stream: false,
 		temperature: 1,
 		max_tokens: 16,
@@ -288,19 +288,19 @@ async function onlineChatTo(target, timeoutMs = 20000) {
 			signal: AbortSignal.timeout(Number(timeoutMs) || 20000),
 		});
 	} catch (error) {
-		return { ok: false, reason: "generate-error", message: "联网模型没连上（" + url + "）：" + (error instanceof Error ? error.message : String(error)) };
+		return { ok: false, reason: "generate-error", message: "Online model not reachable (" + url + "): " + (error instanceof Error ? error.message : String(error)) };
 	}
 	if (!res.ok) {
 		const detail = await res.text().catch(() => "");
 		const known = CN_ERROR[res.status] ?? `HTTP ${res.status}`;
-		return { ok: false, reason: "generate-error", message: `联网模型返回 ${known}${detail ? "：" + detail.slice(0, 200) : ""}` };
+		return { ok: false, reason: "generate-error", message: `Online model returned ${known}${detail ? ": " + detail.slice(0, 200) : ""}` };
 	}
 	try {
 		const json = await res.json();
 		const text = stripThink(json?.choices?.[0]?.message?.content ?? "");
 		if (text) return { ok: true, text, model: target.model, provider: ONLINE_PROVIDER };
-		return { ok: false, reason: "generate-error", message: "模型没返回文本" };
+		return { ok: false, reason: "generate-error", message: "The model returned no text" };
 	} catch (error) {
-		return { ok: false, reason: "generate-error", message: "返回的不是 JSON：" + (error instanceof Error ? error.message : String(error)) };
+		return { ok: false, reason: "generate-error", message: "Returned non-JSON:" + (error instanceof Error ? error.message : String(error)) };
 	}
 }

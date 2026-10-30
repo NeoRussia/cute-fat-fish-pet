@@ -199,7 +199,7 @@ export async function probeModel(model, { api = ollamaApi(), timeoutMs = 90000, 
   const res = await fetchJson(`${api}/api/generate`, timeoutMs, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model, prompt: "你好", stream: false, keep_alive: "10m", options: { num_predict: numPredict, temperature: 0.2 } }),
+    body: JSON.stringify({ model, prompt: "hello", stream: false, keep_alive: "10m", options: { num_predict: numPredict, temperature: 0.2 } }),
   });
   const evalCount = Number(res.eval_count) || 0;
   const evalNs = Number(res.eval_duration) || 0;
@@ -233,34 +233,34 @@ export function buildTune(picks) {
 function notesFor(gpus, ollama, picks, tune) {
   const notes = [];
   const gpuLine = gpus.length
-    ? gpus.map((g) => `${g.name}${g.vramMB ? `（显存 ${(g.vramMB / 1024).toFixed(1)} GB）` : "（显存读不到，按最小档算）"}`).join("；")
-    : "没检测到独立显卡";
-  notes.push(`显卡：${gpuLine}`);
+    ? gpus.map((g) => `${g.name}${g.vramMB ? `(VRAM ${(g.vramMB / 1024).toFixed(1)} GB)` : "(VRAM unreadable, using the smallest tier)"}`).join("; ")
+    : "No discrete GPU detected";
+  notes.push(`GPU: ${gpuLine}`);
   if (!ollama.installed) {
-    notes.push("本机没有装 Ollama —— 想用本地模型请先装 Ollama，或者在上面填联网模型的接口地址与 API Key。");
+    notes.push("Ollama isn't installed on this machine — install Ollama to use a local model, or fill in the online model's endpoint and API key above.");
   } else if (!ollama.running) {
-    notes.push(`装了 Ollama（${ollama.exe}）但服务没在跑 —— 点「启动 Ollama」或重启电脑后它一般会自启。`);
+    notes.push(`Ollama is installed (${ollama.exe}) but the service isn't running — click "Start Ollama", or restart the computer and it usually comes up on its own.`);
   } else if (!ollama.models.length) {
-    notes.push("Ollama 在跑，但一个模型都没有 —— 可以点「帮我装一个小模型」，或者填联网模型。");
+    notes.push("Ollama is running but has no models — click \"Install a small model for me\", or fill in the online model.");
   } else {
-    notes.push(`本机 Ollama 有 ${ollama.models.length} 个模型，按 ${(picks.vramMB / 1024).toFixed(1)} GB 显存算，能舒服跑的是 ${picks.budgetMB} MB 以内的。`);
+    notes.push(`Local Ollama has ${ollama.models.length} models; at ${(picks.vramMB / 1024).toFixed(1)} GB VRAM, the comfortable size is within ${picks.budgetMB} MB.`);
   }
-  if (picks.chat) notes.push(`聊天 / 碎碎念建议用：${picks.chat}${picks.chatInfo ? `（${picks.chatInfo.sizeMB} MB${picks.chatInfo.reasoning ? "，思考型，说话前会先想一会儿" : ""}）` : ""}`);
-  if (picks.vision) notes.push(`看屏幕（视觉）建议用：${picks.vision}${picks.visionInfo ? `（${picks.visionInfo.sizeMB} MB）` : ""}`);
-  else if (ollama.models.length) notes.push("本机没有视觉模型 —— 屏幕监测会用不了，要么拉一个（例如 `ollama pull qwen2.5vl:3b`），要么填联网的视觉模型。");
+  if (picks.chat) notes.push(`For chat / chatter, try: ${picks.chat}${picks.chatInfo ? `（${picks.chatInfo.sizeMB} MB${picks.chatInfo.reasoning ? ", a reasoning model — it thinks before speaking" : ""}）` : ""}`);
+  if (picks.vision) notes.push(`For screen watching (vision), try: ${picks.vision}${picks.visionInfo ? `（${picks.visionInfo.sizeMB} MB）` : ""}`);
+  else if (ollama.models.length) notes.push("No local vision model — screen watching won't work; pull one (e.g. `ollama pull qwen2.5vl:3b`) or fill in an online vision model.");
   if (picks.chat && picks.vision && picks.chat !== picks.vision) {
-    notes.push("两个模型不一样，出话前会先把另一个从显存里请出去（自动，yieldVram=" + String(tune.yieldVram) + "），否则会互相挤到很卡。");
+    notes.push("The two models differ, so the other one is swapped out of VRAM before speaking (automatic, yieldVram=" + String(tune.yieldVram) + "), otherwise they'd fight each other and lag.");
   }
-  if (tune.weak) notes.push("这台机器显存偏小，已经自动把监测频率和上下文调小，画面会更省。");
-  if (picks.cpuOnly) notes.push("没有可用的显存，只能靠 CPU 跑 —— 会很慢，建议优先用联网模型。");
+  if (tune.weak) notes.push("This machine has little VRAM, so watch frequency and context have been reduced automatically to save memory.");
+  if (picks.cpuOnly) notes.push("No usable VRAM — it will run on CPU, which is slow; prefer the online model.");
   return notes;
 }
 
 /** 一次做完检测（不测速；测速要单独点，因为要花时间） */
 export async function detectAll({ log = () => {} } = {}) {
-  log("检测显卡…");
+  log("Detecting GPU…");
   const gpus = await detectGpus();
-  log("检测 Ollama…");
+  log("Detecting Ollama…");
   const ollama = await ollamaInfo();
   const picks = pickModels(gpus, ollama.models);
   const tune = buildTune(picks);
@@ -333,7 +333,7 @@ export async function applyProfile(paths, profile, { force = false, setState = n
 
 /** 拉一个小模型（给「本机什么都没有」的人用），返回日志行回调 */
 export async function pullModel(model, { exe, onLine = () => {}, api = ollamaApi() } = {}) {
-  if (!exe) throw new Error("找不到 ollama.exe");
+  if (!exe) throw new Error("ollama.exe not found");
   const ctl = new AbortController();
   const res = await fetch(`${api}/api/pull`, {
     method: "POST",

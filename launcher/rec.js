@@ -105,8 +105,8 @@ function writeRecord(patch) {
 const REC_WORDS = /录屏|录影|录像|录制|屏幕录制|obs|bandicam|camtasia|sharex|captura|screencast|screenrec|screentogif|ocam|apowerrec|faststone|ev录屏|超级录屏/i;
 
 const FIXED_RECORDERS = [
-	{ name: "Xbox Game Bar（Windows 自带）", path: "ms-gamingoverlay:", kind: "xbox" },
-	{ name: "步骤记录器 psr.exe（Windows 自带）", path: "C:\\Windows\\System32\\psr.exe", kind: "psr" },
+	{ name: "Xbox Game Bar (built into Windows)", path: "ms-gamingoverlay:", kind: "xbox" },
+	{ name: "Steps Recorder psr.exe (built into Windows)", path: "C:\\Windows\\System32\\psr.exe", kind: "psr" },
 ];
 
 function obsCtl() {
@@ -137,7 +137,7 @@ function detectRecorders() {
 	};
 	const ctl = obsCtl();
 	const cands = typeof ctl?.obsExeCandidates === "function" ? ctl.obsExeCandidates() : [];
-	for (const p of cands) if (exists(p)) push("OBS Studio（obs-websocket 全控制）", p, "obs");
+	for (const p of cands) if (exists(p)) push("OBS Studio (full obs-websocket control)", p, "obs");
 	const apps = petApi.listApps(2000).apps || [];
 	for (const a of apps) {
 		if (!REC_WORDS.test(a.name)) continue;
@@ -158,7 +158,7 @@ async function recStatus() {
 	const base = { ok: true, software: soft, outDir: cfg.outDir, file: RECORD_FILE };
 	if (soft.kind === "obs") {
 		const ctl = obsCtl();
-		if (!ctl) return Object.assign(base, { ok: false, reason: "no-obs-ctl", message: "副本里找不到 obs-ctl.js" });
+		if (!ctl) return Object.assign(base, { ok: false, reason: "no-obs-ctl", message: "obs-ctl.js not found in the copy" });
 		const st = await ctl.status();
 		let dir = "";
 		if (st && st.ok && st.running) {
@@ -180,9 +180,9 @@ async function recStatus() {
 			error: st && st.ok ? "" : (st && st.error) || "",
 		});
 	}
-	if (soft.kind === "xbox") return Object.assign(base, { kind: "xbox", note: "Windows 游戏录屏：保存位置由 Windows 定（视频\\捕获），无法从外面改" });
-	if (soft.kind === "psr") return Object.assign(base, { kind: "psr", note: "步骤记录器只记录操作步骤，不录视频，起停要主人自己按" });
-	return Object.assign(base, { kind: "other", note: "这个软件没有通用接口，只能替你打开，起停要主人自己按" });
+	if (soft.kind === "xbox") return Object.assign(base, { kind: "xbox", note: "Windows game recording: the save location is set by Windows (Videos\\Captures) and can't be changed from outside" });
+	if (soft.kind === "psr") return Object.assign(base, { kind: "psr", note: "Steps Recorder only records steps, not video; starting and stopping is up to master" });
+	return Object.assign(base, { kind: "other", note: "This app has no generic interface, so I can only open it; start/stop is up to master" });
 }
 
 async function recStart() {
@@ -190,14 +190,14 @@ async function recStart() {
 	const soft = cfg.software;
 	if (soft.kind === "obs") {
 		const ctl = obsCtl();
-		if (!ctl) return { ok: false, reason: "no-obs-ctl", message: "副本里找不到 obs-ctl.js" };
+		if (!ctl) return { ok: false, reason: "no-obs-ctl", message: "obs-ctl.js not found in the copy" };
 		const r = await ctl.start();
 		return r && r.ok
 			? { ok: true, already: !!r.already, startedObs: !!r.startedObs, obsStartMs: r.obsStartMs || 0, software: soft }
-			: { ok: false, reason: "obs-start-failed", message: String((r && r.error) || "起录失败"), software: soft };
+			: { ok: false, reason: "obs-start-failed", message: String((r && r.error) || "Failed to start recording"), software: soft };
 	}
 	if (soft.kind === "xbox") return sendKeys("xbox-toggle");
-	return { ok: false, reason: "no-interface", message: `「${soft.name}」没有可用的起录接口，我只能替你把它打开` };
+	return { ok: false, reason: "no-interface", message: `"${soft.name}" has no usable start interface — I can only open it for you` };
 }
 
 async function recStop() {
@@ -205,48 +205,48 @@ async function recStop() {
 	const soft = cfg.software;
 	if (soft.kind === "obs") {
 		const ctl = obsCtl();
-		if (!ctl) return { ok: false, reason: "no-obs-ctl", message: "副本里找不到 obs-ctl.js" };
+		if (!ctl) return { ok: false, reason: "no-obs-ctl", message: "obs-ctl.js not found in the copy" };
 		const r = await ctl.stop();
 		return r && r.ok
 			? { ok: true, already: !!r.already, path: String((r && r.path) || ""), software: soft }
-			: { ok: false, reason: "obs-stop-failed", message: String((r && r.error) || "停录失败"), software: soft };
+			: { ok: false, reason: "obs-stop-failed", message: String((r && r.error) || "Failed to stop recording"), software: soft };
 	}
 	if (soft.kind === "xbox") return sendKeys("xbox-toggle");
-	return { ok: false, reason: "no-interface", message: `「${soft.name}」没有可用的停录接口` };
+	return { ok: false, reason: "no-interface", message: `"${soft.name}" has no usable stop interface` };
 }
 
 /** 改保存位置：OBS 走 SetRecordDirectory（要 OBS 开着，没开会先把它拉起来）；别的软件只能记在配置里。 */
 async function recSetDir(dir) {
 	const p = String(dir || "").trim();
-	if (!p) return { ok: false, reason: "empty", message: "先给一个文件夹路径" };
+	if (!p) return { ok: false, reason: "empty", message: "Give me a folder path first" };
 	try {
 		fs.mkdirSync(p, { recursive: true });
 	} catch (e) {
-		return { ok: false, reason: "mkdir-failed", message: `建不了这个文件夹：${(e && e.message) || e}` };
+		return { ok: false, reason: "mkdir-failed", message: `Couldn't create this folder: ${(e && e.message) || e}` };
 	}
 	const cfg = readRecord();
 	const written = writeRecord({ outDir: p });
 	if (cfg.software.kind === "obs") {
 		const ctl = obsCtl();
-		if (!ctl) return { ok: false, reason: "no-obs-ctl", message: "副本里找不到 obs-ctl.js" };
+		if (!ctl) return { ok: false, reason: "no-obs-ctl", message: "obs-ctl.js not found in the copy" };
 		const ens = await ctl.ensureRunning();
-		if (!ens.ok) return { ok: true, applied: false, outDir: p, message: `记下了，但 OBS 没起来（${ens.error}），等它开了再设一次`, record: written.record };
+		if (!ens.ok) return { ok: true, applied: false, outDir: p, message: `Noted, but OBS isn't running (${ens.error}); set it again once OBS is up`, record: written.record };
 		// OBS 刚起来的那几秒端口虽然通了，但它自己还没 ready，会回 207 NotReady —— 轮询重试，
 		// 跟 obs-ctl.start() 里面的做法一样，别把一条正常的设置当成失败。
 		let last = "";
 		for (let i = 0; i < 20; i++) {
 			try {
 				await ctl.call("SetRecordDirectory", { recordDirectory: p });
-				return { ok: true, applied: true, outDir: p, message: "OBS 的保存位置已经改好（只改这一项，别的设置没动）", record: written.record };
+				return { ok: true, applied: true, outDir: p, message: "OBS's save location is updated (this one setting only; nothing else changed)", record: written.record };
 			} catch (e) {
 				last = String((e && e.message) || e);
 				if (!/20[0-9]|not.?ready|not connected|timeout/i.test(last)) break;
 				await new Promise((r) => setTimeout(r, 1000));
 			}
 		}
-		return { ok: true, applied: false, outDir: p, message: `记下了，但 OBS 拒绝了这条设置：${last}`, record: written.record };
+		return { ok: true, applied: false, outDir: p, message: `Noted, but OBS rejected the setting: ${last}`, record: written.record };
 	}
-	return { ok: true, applied: false, outDir: p, message: `记下了（「${cfg.software.name}」的保存位置没法从外面改，需要主人在它自己的设置里指到这个文件夹）`, record: written.record };
+	return { ok: true, applied: false, outDir: p, message: `Noted ("${cfg.software.name}"'s save location can't be changed from outside — master needs to point it at this folder in its own settings)`, record: written.record };
 }
 
 /** 打开录屏软件（谁选的都行；xbox 用 ms-gamingoverlay: 协议唤出 Game Bar）。 */
@@ -258,7 +258,7 @@ async function recOpen() {
 		const ctl = obsCtl();
 		target = (ctl && ctl.findObsExe && ctl.findObsExe()) || "";
 	}
-	if (!target) return { ok: false, reason: "no-path", message: "还没选录屏软件（控制台里选一个，或让我用 list_recorders 看一眼）" };
+	if (!target) return { ok: false, reason: "no-path", message: "No recorder selected yet (pick one in the console, or let me check list_recorders)" };
 	if (soft.kind === "xbox" || soft.kind === "psr") {
 		try {
 			await shell.openExternal(target);
@@ -267,14 +267,14 @@ async function recOpen() {
 			return { ok: false, reason: "open-failed", message: String((e && e.message) || e) };
 		}
 	}
-	if (!exists(target)) return { ok: false, reason: "not-found", message: `找不到：${target}` };
+	if (!exists(target)) return { ok: false, reason: "not-found", message: `Not found: ${target}` };
 	const err = await shell.openPath(target);
 	return err ? { ok: false, reason: "open-failed", message: err } : { ok: true, opened: target, software: soft };
 }
 
 /** Win+Alt+R：Windows 游戏录屏的起停（纯合成按键，只按这一个组合，不敲别的）。 */
 function sendKeys(which) {
-	if (which !== "xbox-toggle") return { ok: false, reason: "bad-key", message: "只支持 xbox-toggle" };
+	if (which !== "xbox-toggle") return { ok: false, reason: "bad-key", message: "only xbox-toggle is supported" };
 	const ps = [
 		"$sig='[DllImport(\"user32.dll\")]public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.UIntPtr dwExtraInfo);';",
 		"Add-Type -MemberDefinition $sig -Name K -Namespace W;",
@@ -295,7 +295,7 @@ function sendKeys(which) {
 			shell: false,
 		});
 		child.unref();
-		return { ok: true, keys: "Win+Alt+R", note: "已经把 Win+Alt+R 按下去了（Windows 游戏录屏的起停开关）" };
+		return { ok: true, keys: "Win+Alt+R", note: "Pressed Win+Alt+R (the Windows game-recording start/stop toggle)" };
 	} catch (e) {
 		return { ok: false, reason: "keys-failed", message: String((e && e.message) || e) };
 	}
@@ -307,25 +307,25 @@ function sendKeys(which) {
 const PATH_ALIAS = {
 	edge: ["C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe", "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"],
 	chrome: ["C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"],
-	"谷歌浏览器": ["C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"],
-	"微软浏览器": ["C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"],
+	"Chrome": ["C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"],
+	"Edge": ["C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"],
 	notepad: ["C:\\Windows\\System32\\notepad.exe"],
-	"记事本": ["C:\\Windows\\System32\\notepad.exe"],
+	"Notepad": ["C:\\Windows\\System32\\notepad.exe"],
 	calc: ["C:\\Windows\\System32\\calc.exe"],
-	"计算器": ["C:\\Windows\\System32\\calc.exe"],
-	"画图": ["C:\\Windows\\System32\\mspaint.exe"],
+	"Calculator": ["C:\\Windows\\System32\\calc.exe"],
+	"Paint": ["C:\\Windows\\System32\\mspaint.exe"],
 	mspaint: ["C:\\Windows\\System32\\mspaint.exe"],
 	explorer: ["C:\\Windows\\explorer.exe"],
-	"资源管理器": ["C:\\Windows\\explorer.exe"],
-	"文件管理器": ["C:\\Windows\\explorer.exe"],
+	"File Explorer": ["C:\\Windows\\explorer.exe"],
+	"File Manager": ["C:\\Windows\\explorer.exe"],
 	taskmgr: ["C:\\Windows\\System32\\Taskmgr.exe"],
-	"任务管理器": ["C:\\Windows\\System32\\Taskmgr.exe"],
+	"Task Manager": ["C:\\Windows\\System32\\Taskmgr.exe"],
 	cmd: ["C:\\Windows\\System32\\cmd.exe"],
 };
 
 function findBrowserExe(which) {
 	const q = String(which || "").toLowerCase().trim();
-	if (!q || q === "default" || q === "默认" || q === "系统默认") return "";
+	if (!q || q === "default" || q === "Default" || q === "system default") return "";
 	const keys = Object.keys(PATH_ALIAS).filter((k) => k.toLowerCase().includes(q) || q.includes(k.toLowerCase()));
 	for (const k of keys) for (const p of PATH_ALIAS[k]) if (exists(p)) return p;
 	return "";
@@ -352,12 +352,12 @@ function findApp(name) {
 async function openApp(name) {
 	const { shell } = require("electron");
 	const hit = findApp(name);
-	if (!hit) return { ok: false, reason: "empty", message: "没给软件名" };
+	if (!hit) return { ok: false, reason: "empty", message: "No software name given" };
 	if (hit.missing) {
 		return {
 			ok: false,
 			reason: "not-found",
-			message: `开始菜单里没找到「${name}」${hit.near.length ? "，是不是： " + hit.near.join(" / ") : ""}`,
+			message: `Nothing called "${name}" in the Start menu${hit.near.length ? "; did you mean: " + hit.near.join(" / ") : ""}`,
 		};
 	}
 	const err = await shell.openPath(hit.path);
@@ -368,9 +368,9 @@ async function openApp(name) {
 async function openUrl(url, opts = {}) {
 	const { shell } = require("electron");
 	let u = String(url || "").trim();
-	if (!u) return { ok: false, reason: "empty", message: "没给网址" };
+	if (!u) return { ok: false, reason: "empty", message: "No URL given" };
 	if (!/^[a-z]+:\/\//i.test(u)) u = `https://${u}`;
-	if (!/^https?:\/\//i.test(u)) return { ok: false, reason: "bad-url", message: "只认 http/https" };
+	if (!/^https?:\/\//i.test(u)) return { ok: false, reason: "bad-url", message: "http/https only" };
 	const want = String(opts.browser || readRecord().browser || "").trim();
 	const exe = findBrowserExe(want);
 	if (exe) {
@@ -383,13 +383,13 @@ async function openUrl(url, opts = {}) {
 		}
 	}
 	await shell.openExternal(u);
-	return { ok: true, opened: u, browser: "系统默认" };
+	return { ok: true, opened: u, browser: "system default" };
 }
 
 /** 浏览器里搜一下（不直接猜网址时用；B站这种有短路表）。 */
 async function searchWeb(query, opts = {}) {
 	const q = String(query || "").trim();
-	if (!q) return { ok: false, reason: "empty", message: "没给要搜的词" };
+	if (!q) return { ok: false, reason: "empty", message: "No search term given" };
 	const engine = (opts.search || readRecord().search) === "baidu" ? "baidu" : "bing";
 	const url =
 		engine === "baidu"
@@ -428,9 +428,9 @@ function petRoute() {
 /** 直接让她把这句话说出来（宿主 POST /say → 渲染端冒泡 + TTS），不走模型、不改她的记忆。 */
 async function say(text, timeoutMs = 8000) {
 	const t = String(text || "").trim();
-	if (!t) return { ok: false, reason: "empty", message: "没给要说的话" };
+	if (!t) return { ok: false, reason: "empty", message: "Nothing to say was given" };
 	const { port, route, running } = petRoute();
-	if (!running) return { ok: false, reason: "pet-offline", message: "桌宠没在跑 —— 先点「启动桌宠」" };
+	if (!running) return { ok: false, reason: "pet-offline", message: "The pet isn't running — click \"Start the pet\" first" };
 	try {
 		const res = await fetch(`http://127.0.0.1:${port}${route}/say`, {
 			method: "POST",
@@ -441,7 +441,7 @@ async function say(text, timeoutMs = 8000) {
 		const obj = await res.json().catch(() => null);
 		return obj && obj.ok ? { ok: true, said: t.slice(0, 120) } : { ok: false, reason: "say-failed", message: (obj && obj.message) || `HTTP ${res.status}` };
 	} catch (e) {
-		return { ok: false, reason: "pet-offline", message: `桌宠没在跑（${(e && e.message) || e}）` };
+		return { ok: false, reason: "pet-offline", message: `The pet isn't running (${(e && e.message) || e})` };
 	}
 }
 

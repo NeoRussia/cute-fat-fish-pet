@@ -42,13 +42,13 @@ PetSprite.prototype.onWorkTick = function onWorkTick(snapshot, tick) {
   }
   const pool = this.animations.events?.workStatus;
   if (!pool || pool.length === 0) {
-    console.error('[dsh-pet] 配置缺少 animations.events.workStatus，无法播放工作状态动画');
+    console.error('[dsh-pet] config is missing animations.events.workStatus; cannot play the work-status animation');
     return;
   }
   const idx = S.WORK_STATUS_INDEX[state];
   const slot = pool[idx];
   if (slot === undefined) {
-    console.error('[dsh-pet] work-status 档位索引越界：state=' + state + ' idx=' + idx);
+    console.error('[dsh-pet] work-status tier index out of range: state=' + state + ' idx=' + idx);
     return;
   }
   const name = S.pickSlot(slot, this.anim); // 数组槽位档内随机抽 1，且避开当前正播动画（避免连续重复，与浏览器一致）
@@ -138,7 +138,7 @@ PetSprite.prototype.startWhisperLoop = function startWhisperLoop() {
       }
       if (!state.ok) {
         console.warn(
-          '[dsh-pet] 碎碎念生成失败 pet=' +
+          '[dsh-pet] chatter generation failed pet=' +
             this.pet.id +
             ' reason=' +
             state.reason +
@@ -153,7 +153,7 @@ PetSprite.prototype.startWhisperLoop = function startWhisperLoop() {
         this.showWhisper(state.text, state.image, { low: true });
       }
     } catch (e) {
-      console.warn('[dsh-pet] 碎碎念拉取异常 pet=' + this.pet.id, e);
+      console.warn('[dsh-pet] chatter fetch error pet=' + this.pet.id, e);
     }
   };
   this.whisperLoopTimer = window.setInterval(() => void refresh(), intervalMs);
@@ -187,7 +187,7 @@ PetSprite.prototype.startBroadcastLoop = function startBroadcastLoop() {
         this.showWhisper(d.text, typeof d.image === 'string' ? d.image : '');
       }
     } catch (e) {
-      console.warn('[dsh-pet] 广播拉取异常 pet=' + this.pet.id, e);
+      console.warn('[dsh-pet] broadcast fetch error pet=' + this.pet.id, e);
     }
   };
   this.broadcastLoopTimer = window.setInterval(() => void refresh(), 1000);
@@ -201,7 +201,7 @@ PetSprite.prototype.showWhisper = function showWhisper(text, image, opts) {
   if (opts && opts.low && typeof this.isChatHolding === 'function' && this.isChatHolding()) return;
   const pool = this.animations.events?.whisper;
   if (!pool || pool.length === 0) {
-    console.error('[dsh-pet] 配置缺少 animations.events.whisper，无法播放碎碎念动画');
+    console.error('[dsh-pet] config is missing animations.events.whisper; cannot play the chatter animation');
     return;
   }
   // 整池随机抽 1 槽（避开当前正播动画，避免连续重复）；槽位若为数组候选再档内随机（与浏览器一致）
@@ -213,9 +213,9 @@ PetSprite.prototype.showWhisper = function showWhisper(text, image, opts) {
       this.pet.id +
       ' -> [' +
       name +
-      '] 「' +
+      '] "' +
       text +
-      '」' +
+      '"' +
       (image ? ' [' + image + ']' : ''),
   );
   this.stopMove();
@@ -239,13 +239,13 @@ PetSprite.prototype.showBalanceNow = function showBalanceNow(state) {
   if (p === undefined) return; // 当前数据源没有百分比语义：不触发档位动画
   const pool = this.animations.events?.balance;
   if (!pool || pool.length === 0) {
-    console.error('[dsh-pet] 配置缺少 animations.events.balance，无法播放余额事件动画');
+    console.error('[dsh-pet] config is missing animations.events.balance; cannot play the balance event animation');
     return;
   }
   const idx = S.balanceEventIndex(p);
   const slot = pool[idx];
   if (!slot) {
-    console.error('[dsh-pet] balance 档位索引越界：p=' + p + ' idx=' + idx);
+    console.error('[dsh-pet] balance tier index out of range: p=' + p + ' idx=' + idx);
     return;
   }
   const name = S.pickSlot(slot, this.anim); // 数组槽位档内随机抽 1，且避开当前正播动画（避免连续重复，与浏览器一致）
@@ -274,7 +274,7 @@ function applyBalanceNotice(state, explicit) {
   if (notice.show) for (const s of sprites) s.showBalanceNotice(state);
   // 未登记服务商是配置事实（已由气泡说明），不再刷 console；其余原因照旧显式报错，绝不伪造余额
   if (state.reason !== 'unsupported') {
-    console.error('[dsh-pet] 余额查询失败 reason=' + state.reason + (state.message ? ' ' + state.message : ''));
+    console.error('[dsh-pet] balance lookup failed reason=' + state.reason + (state.message ? ' ' + state.message : ''));
   }
 }
 
@@ -301,7 +301,7 @@ function startLoops() {
           applyBalanceNotice(state, false);
         }
       } catch (e) {
-        console.error('[dsh-pet] 余额拉取异常', e);
+        console.error('[dsh-pet] balance fetch error', e);
       }
       setTimeout(() => void balanceLoop(), intervalMs);
     };

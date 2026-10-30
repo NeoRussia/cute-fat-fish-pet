@@ -128,7 +128,7 @@ export function createRequestListener({ routes, logger, status, onShutdown, toke
 				sendJson(
 					res,
 					405,
-					{ ok: false, reason: "method-not-allowed", message: "/shutdown 只接受 POST" },
+					{ ok: false, reason: "method-not-allowed", message: "/shutdown accepts POST only" },
 					{ ...cors, allow: "POST" },
 				);
 				return;
@@ -140,7 +140,7 @@ export function createRequestListener({ routes, logger, status, onShutdown, toke
 					{
 						ok: false,
 						reason: "unauthorized",
-						message: "缺少或不对的 token —— 口令写在数据目录的 runtime.json 里（stop-pet.mjs / stop-pet.vbs 会自动带上）",
+						message: "Missing or wrong token — the password is in runtime.json in the data folder (stop-pet.mjs / stop-pet.vbs send it automatically)",
 					},
 					cors,
 				);
@@ -162,7 +162,7 @@ export function createRequestListener({ routes, logger, status, onShutdown, toke
 		Promise.resolve()
 			.then(() => route.handler(req, res))
 			.catch((error) => {
-				logger.error(`route handler 失败 ${pathname}: ${msg(error)}`);
+				logger.error(`route handler failed ${pathname}: ${msg(error)}`);
 				try {
 					if (res.headersSent) res.destroy();
 					else sendJson(res, 500, { error: msg(error) });
@@ -181,7 +181,7 @@ export async function listenStandaloneServer(options) {
 	const preferred = Number.isInteger(options.port) ? options.port : DEFAULT_STANDALONE_PORT;
 	const listener = createRequestListener({ routes, logger, status, onShutdown, token: options.token });
 	if (!(typeof options.token === "string" && options.token.length > 0)) {
-		logger.warn("/shutdown 没有口令（调用方没传 token）—— 只剩来源门禁兜着");
+		logger.warn("/shutdown had no password (caller sent no token) — only the origin gate is left");
 	}
 	const taken = [];
 
@@ -218,7 +218,7 @@ export async function listenStandaloneServer(options) {
 		}
 
 		const actual = server.address()?.port ?? candidate;
-		if (taken.length > 0) logger.warn(`端口 ${taken.join(" / ")} 被占用，已改绑 ${actual}`);
+		if (taken.length > 0) logger.warn(`Ports ${taken.join(" / ")} were busy; bound to ${actual} instead`);
 
 		let closed = false;
 		return {
@@ -238,5 +238,5 @@ export async function listenStandaloneServer(options) {
 		};
 	}
 
-	throw new Error(`dsh-pet standalone: 从 ${preferred} 起连续 ${PORT_SCAN_LIMIT} 个端口都被占用，起不来`);
+	throw new Error(`dsh-pet standalone: ${PORT_SCAN_LIMIT} consecutive ports from ${preferred} were busy; cannot start`);
 }

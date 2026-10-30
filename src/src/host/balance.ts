@@ -83,13 +83,13 @@ async function fetchWithRetry(url: string, key: string): Promise<Response> {
 /** 数字兜底校验：数值化失败或非有限数 → throw（数据异常显式报错，不静默当 0） */
 function num(value: unknown, what: string): number {
   const n = Number(value);
-  if (!Number.isFinite(n)) throw new Error('dsh-pet: 余额数据非法字段 ' + what);
+  if (!Number.isFinite(n)) throw new Error('dsh-pet: invalid balance field ' + what);
   return n;
 }
 
 /** 字符串兜底校验：非空字符串，否则 throw */
 function str(value: unknown, what: string): string {
-  if (typeof value !== 'string' || value.length === 0) throw new Error('dsh-pet: 余额数据非法字段 ' + what);
+  if (typeof value !== 'string' || value.length === 0) throw new Error('dsh-pet: invalid balance field ' + what);
   return value;
 }
 
@@ -99,12 +99,12 @@ async function fetchOpencode(key: string, provider: string): Promise<BalanceResu
   if (!res.ok) throw new Error('opencode usage HTTP ' + res.status);
   const body: unknown = await res.json();
   const usage = (body as { usage?: unknown })?.usage;
-  if (!usage || typeof usage !== 'object') throw new Error('dsh-pet: opencode usage 响应缺少 usage');
+  if (!usage || typeof usage !== 'object') throw new Error('dsh-pet: opencode usage response has no usage');
   const u = usage as Record<string, { percent?: unknown; resetsAt?: unknown }>;
   const rolling = u.rolling,
     weekly = u.weekly,
     monthly = u.monthly;
-  if (!rolling || !weekly || !monthly) throw new Error('dsh-pet: opencode usage 响应缺少窗口');
+  if (!rolling || !weekly || !monthly) throw new Error('dsh-pet: opencode usage response has no window');
   return {
     ok: true,
     provider,
@@ -126,7 +126,7 @@ async function fetchDeepseek(key: string, provider: string): Promise<BalanceResu
   if (!res.ok) throw new Error('deepseek balance HTTP ' + res.status);
   const body: unknown = await res.json();
   const infos = (body as { balance_infos?: unknown })?.balance_infos;
-  if (!Array.isArray(infos) || infos.length === 0) throw new Error('dsh-pet: deepseek balance 响应缺少 balance_infos');
+  if (!Array.isArray(infos) || infos.length === 0) throw new Error('dsh-pet: deepseek balance response has no balance_infos');
   const first = infos[0] as Record<string, unknown>;
   return {
     ok: true,
@@ -155,7 +155,7 @@ export async function queryBalance(
   if (!match) return { ok: false, provider, reason: 'unsupported' };
 
   const rc = await resolveKey(match.ref);
-  if (!rc) return { ok: false, provider, reason: 'credential-missing', message: '缺少凭证 ' + match.ref };
+  if (!rc) return { ok: false, provider, reason: 'credential-missing', message: 'Missing credentials ' + match.ref };
 
   try {
     return match.kind === 'opencode' ? await fetchOpencode(rc, provider) : await fetchDeepseek(rc, provider);

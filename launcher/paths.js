@@ -7,7 +7,7 @@ const { existsSync, mkdirSync, readdirSync, copyFileSync, readFileSync } = requi
 const { dirname, join, resolve } = require("node:path");
 
 const APP_NAME = "BlueHairMaid";
-const DISPLAY_NAME = "蓝毛小女仆";
+const DISPLAY_NAME = "Blue-Haired Little Maid";
 
 function appDataDir() {
   return process.env.APPDATA || join(process.env.USERPROFILE || ".", "AppData", "Roaming");

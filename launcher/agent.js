@@ -24,16 +24,16 @@ const PET_TIMEOUT_MS = 120000;
 
 // 常见站点短路表 —— 放进提示词里当参考资料，用不用由模型自己决定。
 const SITES = [
-	["B站 / bilibili / 哔哩哔哩", "https://www.bilibili.com"],
-	["知乎", "https://www.zhihu.com"],
-	["百度", "https://www.baidu.com"],
-	["微博", "https://weibo.com"],
-	["淘宝", "https://www.taobao.com"],
-	["京东", "https://www.jd.com"],
-	["抖音", "https://www.douyin.com"],
-	["小红书", "https://www.xiaohongshu.com"],
-	["豆瓣", "https://www.douban.com"],
-	["网易云音乐", "https://music.163.com"],
+	["Bilibili", "https://www.bilibili.com"],
+	["Zhihu", "https://www.zhihu.com"],
+	["Baidu", "https://www.baidu.com"],
+	["Weibo", "https://weibo.com"],
+	["Taobao", "https://www.taobao.com"],
+	["JD.com", "https://www.jd.com"],
+	["Douyin", "https://www.douyin.com"],
+	["Xiaohongshu", "https://www.xiaohongshu.com"],
+	["Douban", "https://www.douban.com"],
+	["NetEase Cloud Music", "https://music.163.com"],
 	["GitHub", "https://github.com"],
 	["YouTube", "https://www.youtube.com"],
 	["Steam", "https://store.steampowered.com"],
@@ -42,18 +42,18 @@ const SITES = [
 
 const TOOLS = {
 	list_recorders: {
-		desc: "看看这台电脑上有哪些能录屏的软件（只读，不改任何东西）",
+		desc: "See which apps on this computer can record the screen (read-only, changes nothing)",
 		args: "{}",
 		perm: null,
 		run: async () => rec.detectRecorders(),
 	},
 	use_recorder: {
-		desc: "换一个录屏软件（名字或路径，先用 list_recorders 看）",
+		desc: "Switch to a different screen recorder (name or path; run list_recorders first)",
 		args: '{"name":"OBS Studio"}',
 		perm: "app",
 		run: async (a) => {
 			const q = String((a && (a.name || a.path)) || "").trim();
-			if (!q) return { ok: false, reason: "empty", message: "没给软件名" };
+			if (!q) return { ok: false, reason: "empty", message: "No software name given" };
 			const det = rec.detectRecorders();
 			const ql = q.toLowerCase();
 			const hit =
@@ -66,13 +66,13 @@ const TOOLS = {
 		},
 	},
 	open_recorder: {
-		desc: "把当前选定的录屏软件打开（需要「软件」权限）",
+		desc: "Open the currently selected screen recorder (needs the \"apps\" permission)",
 		args: "{}",
 		perm: "app",
 		run: async () => rec.recOpen(),
 	},
 	record: {
-		desc: "录屏动作：开始 / 停止 / 看状态",
+		desc: "Recording: start / stop / check status",
 		args: '{"action":"start"}',
 		perm: "app",
 		run: async (a) => {
@@ -83,13 +83,13 @@ const TOOLS = {
 		},
 	},
 	record_dir: {
-		desc: "把录像保存位置改到某个文件夹（OBS 能真的改；别的软件只能记下来）",
-		args: '{"dir":"E:\\\\录像"}',
+		desc: "Change where recordings are saved (OBS can really change it; other apps just remember it)",
+		args: '{"dir":"E:\\\\recordings"}',
 		perm: "app",
 		run: async (a) => rec.recSetDir((a && (a.dir || a.path)) || ""),
 	},
 	list_apps: {
-		desc: "列出本机开始菜单里的软件（可以用 keyword 过滤，只读）",
+		desc: "List the apps in the Start menu (optional keyword filter; read-only)",
 		args: '{"keyword":"chrome"}',
 		perm: null,
 		run: async (a) => {
@@ -100,48 +100,48 @@ const TOOLS = {
 		},
 	},
 	open_app: {
-		desc: "打开一个软件（需要「软件」权限）",
+		desc: "Open an app (needs the \"apps\" permission)",
 		args: '{"name":"Chrome"}',
 		perm: "app",
 		run: async (a) => rec.openApp((a && a.name) || ""),
 	},
 	open_file: {
-		desc: "用默认程序打开一个文件或文件夹（需要「文件」权限）",
-		args: '{"path":"C:\\\\Users\\\\<你>\\\\Documents"}',
+		desc: "Open a file or folder with its default program (needs the \"files\" permission)",
+		args: '{"path":"C:\\\\Users\\\\<you>\\\\Documents"}',
 		perm: "file",
 		run: async (a) => petApi.openTarget("file", (a && (a.path || a.file)) || ""),
 	},
 	open_url: {
-		desc: "用浏览器打开一个网址（需要「网页」权限）",
+		desc: "Open a URL in the browser (needs the \"web\" permission)",
 		args: '{"url":"https://www.bilibili.com"}',
 		perm: "url",
 		run: async (a) => rec.openUrl((a && (a.url || a.site)) || ""),
 	},
 	search: {
-		desc: "在浏览器里搜一个词（不知道网址时用这个，需要「网页」权限）",
-		args: '{"query":"B站"}',
+		desc: "Search the web (use when you don't know the URL; needs the \"web\" permission)",
+		args: '{"query":"bilibili"}',
 		perm: "url",
 		run: async (a) => rec.searchWeb((a && (a.query || a.q || a.word)) || ""),
 	},
 	speak: {
-		desc: "让桌宠把一句话说出来（冒泡 + 语音，不走模型）",
-		args: '{"text":"录上了哦"}',
+		desc: "Have the pet say a line (bubble + voice, no model)",
+		args: '{"text":"Recording started"}',
 		perm: null,
 		run: async (a) => rec.say((a && a.text) || ""),
 	},
 	done: {
-		desc: "收工，把结果告诉主人",
-		args: '{"reply":"已经帮你打开 B 站了"}',
+		desc: "Finish up and tell master the result",
+		args: '{"reply":"I\'ve opened bilibili for you"}',
 		perm: null,
 		run: async (a) => ({ ok: true, reply: String((a && (a.reply || a.text)) || "") }),
 	},
 };
 
-const PERM_CN = { app: "软件", file: "文件", url: "网页" };
+const PERM_CN = { app: "Apps", file: "Files", url: "Web" };
 
 // 一次就能办完的动作：办成之后直接收尾，别再让小模型接着瞎调工具绕圈。
 const ONE_SHOT = new Set(["open_url", "open_app", "open_file", "use_recorder", "record_dir", "record", "search"]);
-const WRAP_SYSTEM = "你是桌面上的「蓝毛小女仆」，说话简短、可爱、口语化，用中文。";
+const WRAP_SYSTEM = "You are the Blue-Haired Little Maid on the desktop. Speak briefly, cutely, in a conversational way, in English.";
 
 function stripThink(text) {
 	return String(text == null ? "" : text)
@@ -209,26 +209,26 @@ function pickToolCall(text) {
 /** 给快模型（联网 / 大模型）用的完整提示词。 */
 function buildSystem(ctx) {
 	const lines = [];
-	lines.push("你是桌面上的「蓝毛小女仆」，现在一边跟主人聊天，一边通过工具替他操作电脑。");
-	lines.push("你只能回一个 JSON 对象，不要解释、不要 Markdown 代码块（除非必要）、不要多余的话。");
+	lines.push("You are the Blue-Haired Little Maid on the desktop, chatting with master while using tools to operate his computer.");
+	lines.push("Reply with one JSON object only. No explanations, no Markdown code blocks (unless necessary), no extra words.");
 	lines.push("");
-	lines.push("两种回法：");
-	lines.push('1) 要动手：{"tool":"工具名","args":{...},"say":"顺手跟主人说的一句话（可省）"}');
-	lines.push('2) 干完了：{"tool":"done","args":{"reply":"给主人的回答"}}');
+	lines.push("Two ways to reply:");
+	lines.push('1) Take action: {"tool":"tool name","args":{...},"say":"a line to say to master (optional)"}');
+	lines.push('2) All done: {"tool":"done","args":{"reply":"your answer to master"}}');
 	lines.push("");
-	lines.push("可用工具（args 必须是 JSON 对象）：");
+	lines.push("Available tools (args must be a JSON object):");
 	for (const [name, def] of Object.entries(TOOLS)) {
 		lines.push(`- ${name}(${def.args}) —— ${def.desc}${def.perm ? `【需要「${PERM_CN[def.perm]}」权限】` : ""}`);
 	}
 	lines.push("");
-	lines.push("规矩：");
-	lines.push("1. 一次只调一个工具，看到结果再决定下一步。");
-	lines.push("2. 权限关着的时候工具会失败，这时候别硬试，用 done 告诉主人去哪儿打开开关。");
-	lines.push("3. 主人让你打开某个网站，用 open_url 直接开；不确定网址就用 search 搜一下（他说「打开B站」时两种都行）。");
-	lines.push("4. 主人让你录屏，先看 record(action=\"status\")，再决定 record 开始还是停止。");
-	lines.push("5. 干完活一定用 done 收尾，把「做了什么、结果怎么样」一句话说清楚。");
+	lines.push("Rules:");
+	lines.push("1. Call one tool at a time; look at the result before deciding the next step.");
+	lines.push("2. When a permission is off the tool fails. Don't force it — use done to tell master where to turn it on.");
+	lines.push("3. When master asks to open a site, use open_url directly; if unsure of the URL, search first (for \"open bilibili\" either is fine).");
+	lines.push("4. When master asks to record, check record(action=\"status\") first, then decide to start or stop.");
+	lines.push("5. Always finish with done, summing up what you did and the outcome in one line.");
 	lines.push("");
-	lines.push("参考网址：");
+	lines.push("Reference URLs:");
 	for (const [k, v] of SITES) lines.push(`- ${k} → ${v}`);
 	lines.push("");
 	lines.push(stateLine(ctx));
@@ -243,10 +243,10 @@ function buildSystem(ctx) {
 function buildTerse(ctx) {
 	const tools = Object.entries(TOOLS)
 		.map(([name, def]) => `${name}(${def.args})`)
-		.join("｜");
+		.join(" | ");
 	return [
-		"你是桌面上的蓝毛小女仆，用工具替主人办事。只回一个 JSON，不要思考、不要解释。",
-		"工具：" + tools,
+		"You are the blue-haired maid on the desktop, doing things for master with tools. Reply with one JSON object only, no thinking, no explanation.",
+		"Tools:" + tools,
 		stateLine(ctx),
 	].join("\n");
 }
@@ -254,8 +254,8 @@ function buildTerse(ctx) {
 function stateLine(ctx) {
 	const p = ctx.perm || {};
 	return (
-		`当前状态：权限 软件【${p.app ? "开" : "关"}】文件【${p.file ? "开" : "关"}】网页【${p.url ? "开" : "关"}】` +
-		`；录屏软件 ${ctx.recorder.name}；存到 ${ctx.recDir || "（没设）"}；浏览器 ${ctx.browser || "系统默认"}。`
+		`Current state: permissions apps [${p.app ? "on" : "off"}] files [${p.file ? "on" : "off"}] web [${p.url ? "on" : "off"}]` +
+		` ; screen recorder ${ctx.recorder.name}; saving to ${ctx.recDir || "(unset)"}; browser ${ctx.browser || "system default"}.`
 	);
 }
 
@@ -263,7 +263,7 @@ function stateLine(ctx) {
 const JSON_PREFIX = '{"tool":"';
 
 function promptWithPrefix(transcript) {
-	return transcript.join("\n\n") + "\n\n只输出一行 JSON，从这里接着写：" + JSON_PREFIX;
+	return transcript.join("\n\n") + "\n\nOutput one JSON line only, continuing here:" + JSON_PREFIX;
 }
 
 /** 模型时不时把参数套一层（args/params/parameters/arguments/input），或者干脆不套 args —— 都掰平。 */
@@ -282,12 +282,12 @@ function normalizeArgs(obj) {
 
 /** 兜底用的极简提示词：本地小模型被长提示词带偏时，换这套再来一次。 */
 const TERSE_SYSTEM =
-	"你是一个只输出 JSON 的桌面助手。不要思考、不要解释、不要写多余文字，直接输出一个 JSON 对象。\n" +
-	'可用工具：{"tool":"open_url","args":{"url":"..."}}、{"tool":"search","args":{"q":"..."}}、' +
-	'{"tool":"open_app","args":{"name":"..."}}、{"tool":"list_recorders","args":{}}、' +
-	'{"tool":"use_recorder","args":{"name":"..."}}、{"tool":"record","args":{"action":"start|stop|status"}}、' +
-	'{"tool":"record_dir","args":{"dir":"..."}}、{"tool":"open_recorder","args":{}}、' +
-	'{"tool":"speak","args":{"text":"..."}}、{"tool":"done","args":{"reply":"..."}}。\n' +
+	"You are a JSON-only desktop assistant. No thinking, no explanation, no extra text — output one JSON object directly.\n" +
+	'Available tools: {"tool":"open_url","args":{"url":"..."}}, {"tool":"search","args":{"q":"..."}},\n' +
+	'{"tool":"open_app","args":{"name":"..."}}, {"tool":"list_recorders","args":{}},\n' +
+	'{"tool":"use_recorder","args":{"name":"..."}}, {"tool":"record","args":{"action":"start|stop|status"}},\n' +
+	'{"tool":"record_dir","args":{"dir":"..."}}, {"tool":"open_recorder","args":{}},\n' +
+	'{"tool":"speak","args":{"text":"..."}}, {"tool":"done","args":{"reply":"..."}}.\n' +
 	"/no_think";
 
 /** 调桌宠当前那套模型（走她自己的 /quip，大脑档位/模型都是她的设置）。
@@ -305,17 +305,17 @@ async function think(system, prompt, timeoutMs, numPredict, prefix) {
 			signal: AbortSignal.timeout(petTimeout + 8000),
 		});
 	} catch (e) {
-		return { ok: false, reason: "pet-offline", message: `桌宠没在跑（${(e && e.message) || e}），先启动她再说话` };
+		return { ok: false, reason: "pet-offline", message: `The pet isn't running (${(e && e.message) || e}) — start her first, then talk` };
 	}
 	const obj = await res.json().catch(() => null);
-	if (!obj) return { ok: false, reason: "bad-json", message: `桌宠返回的不是 JSON（HTTP ${res.status}）` };
+	if (!obj) return { ok: false, reason: "bad-json", message: `The pet didn't return JSON (HTTP ${res.status})` };
 	let text = stripThink(obj.text || "");
 	if (text && prefix && !text.trimStart().startsWith("{")) text = prefix + text.trimStart();
 	if (text) return { ok: true, text, model: obj.model || "", provider: obj.provider || obj.reason || "" };
 	return {
 		ok: false,
 		reason: obj.reason || "no-text",
-		message: obj.message || `她的模型没出话（${obj.reason || "unknown"}）`,
+		message: obj.message || `Her model produced no reply (${obj.reason || "unknown"})`,
 	};
 }
 
@@ -335,18 +335,18 @@ async function currentModel() {
 /** 模型中途掉线时，用已经完成的动作拼一句人话（别让主人以为失败了）。 */
 function summarizeSteps(steps, why) {
 	const last = [...steps].reverse().find((s) => !(s.result && s.result.ok === false));
-	if (!last) return `没做成（${why || "模型掉线了"}）`;
+	if (!last) return `Didn't work (${why || "the model went offline"})`;
 	const a = last.args || {};
 	const r = last.result || {};
-	if (last.tool === "open_url") return `已经替你打开 ${a.url || r.opened || "网页"} 了。`;
-	if (last.tool === "search") return `已经在浏览器里搜「${a.q || ""}」了。`;
-	if (last.tool === "open_app") return `已经打开「${a.name || r.opened || "软件"}」了。`;
-	if (last.tool === "open_file") return `已经打开 ${a.path || r.opened || "文件"} 了。`;
-	if (last.tool === "record") return a.action === "stop" ? `录好了，文件在 ${r.path || "录像文件夹"}。` : a.action === "start" ? "开始录了。" : "录屏是空着的。";
-	if (last.tool === "record_dir") return `保存位置改成 ${a.dir || ""} 了。`;
-	if (last.tool === "use_recorder") return `录屏软件换成「${a.name || ""}」了。`;
-	if (last.tool === "speak") return "话替你说了。";
-	return `做完了（${last.tool}）。后面的收尾话没说出来：${why || ""}`;
+	if (last.tool === "open_url") return `Opened ${a.url || r.opened || "the page"} for you.`;
+	if (last.tool === "search") return `Searched for "${a.q || ""}" in the browser.`;
+	if (last.tool === "open_app") return `Opened "${a.name || r.opened || "the app"}" for you.`;
+	if (last.tool === "open_file") return `Opened ${a.path || r.opened || "the file"} for you.`;
+	if (last.tool === "record") return a.action === "stop" ? `Recorded — the file is in ${r.path || "the recordings folder"}.` : a.action === "start" ? "Recording started." : "No recorder selected.";
+	if (last.tool === "record_dir") return `Save location changed to ${a.dir || ""}.`;
+	if (last.tool === "use_recorder") return `Recorder switched to "${a.name || ""}".`;
+	if (last.tool === "speak") return "Said it for you.";
+	return `Done (${last.tool}). The final line didn't come through: ${why || ""}`;
 }
 
 /**
@@ -356,7 +356,7 @@ function summarizeSteps(steps, why) {
 async function runAgent(request, opts = {}) {
 	const onStep = typeof opts.onStep === "function" ? opts.onStep : () => {};
 	const text = String(request || "").trim();
-	if (!text) return { ok: false, reply: "", steps: [], message: "没给要做的事" };
+	if (!text) return { ok: false, reply: "", steps: [], message: "Nothing to do was given" };
 
 	const permRes = await rec.readPerm();
 	const ctx = {
@@ -365,7 +365,7 @@ async function runAgent(request, opts = {}) {
 		recDir: rec.readRecord().outDir,
 		browser: rec.readRecord().browser,
 	};
-	if (!permRes.ok) ctx.permNote = `（权限状态暂时读不到：${permRes.reason}，可能是桌宠刚重启，稍等一下）`;
+	if (!permRes.ok) ctx.permNote = `(Can't read permission state right now: ${permRes.reason} — the pet may have just restarted, wait a moment)`;
 	// 本机 ollama 的 qwen3 是「先想后写」的模型：提示词越长它想得越久。本机就用紧凑那套；
 	// 联网 / 大模型用完整提示词（工具说明和规矩都写全）。
 	const cur = await currentModel();
@@ -373,7 +373,7 @@ async function runAgent(request, opts = {}) {
 	const system = localSmall ? buildTerse(ctx) : buildSystem(ctx);
 	const retrySystem = localSmall ? TERSE_SYSTEM : buildTerse(ctx);
 	const steps = [];
-	const transcript = [`主人说：${text}`];
+	const transcript = [`Master says: ${text}`];
 	let lastSig = "";
 	let repeated = 0;
 	// 预算：本机思考型模型给大预算（想完还有余量写 JSON）；联网模型很快，小预算即可。
@@ -391,12 +391,12 @@ async function runAgent(request, opts = {}) {
 			// 所以「慢失败」绝不重试；只有「几秒就回了但没正文」才值得换个更短的提示词再试一次。
 			const fastFail = Date.now() - t0 < petTimeout * 0.6;
 			if (fastFail && steps.length === 0) {
-				thinkRes = await think(retrySystem, transcript.join("\n\n") + "\n\n只回一个 JSON：", petTimeout, budget, "");
+				thinkRes = await think(retrySystem, transcript.join("\n\n") + "\n\nReply with one JSON object:", petTimeout, budget, "");
 				if (!thinkRes.ok) tried.push(thinkRes.message || thinkRes.reason);
 			}
 		}
 		if (!thinkRes.ok) {
-			const why = tried.join("；");
+			const why = tried.join("; ");
 			if (steps.length === 0) return { ok: false, reply: "", steps, message: why, fallback: true };
 			// 活已经干了一部分，模型却掉线了 —— 别把「做成了」说成失败，按已经发生的事给一句话。
 			return { ok: true, reply: summarizeSteps(steps, why), steps, model: "", degraded: true };
@@ -417,17 +417,17 @@ async function runAgent(request, opts = {}) {
 			steps.push({ tool: name, args, result: r, ms: Date.now() - t0 });
 			onStep({ type: "done", tool: name, text: reply, ms: Date.now() - t0 });
 			if (say && say !== reply) rec.say(say).catch(() => {});
-			return { ok: true, reply: reply || (say || "好了"), steps, model: thinkRes.model };
+			return { ok: true, reply: reply || (say || "Done"), steps, model: thinkRes.model };
 		}
 		const sig = `${name}:${JSON.stringify(args)}`;
 		repeated = sig === lastSig ? repeated + 1 : 0;
 		lastSig = sig;
 		// 兜底解析出来的调用（她其实只是又说了一遍站名）重复一次就当她已经办完了，别绕圈。
 		if (repeated >= 1 && obj.recovered) {
-			return { ok: true, reply: summarizeSteps(steps) || "已经办好了", steps, model: thinkRes.model };
+			return { ok: true, reply: summarizeSteps(steps) || "Done", steps, model: thinkRes.model };
 		}
 		if (repeated >= 2) {
-			return { ok: true, reply: "这件事我绕来绕去没做成，主人换个说法或者自己看一下？", steps, model: thinkRes.model, looped: true };
+			return { ok: true, reply: "I went back and forth and couldn't get this done — master, maybe rephrase it or check it yourself?", steps, model: thinkRes.model, looped: true };
 		}
 
 		const def = TOOLS[name];
@@ -436,7 +436,7 @@ async function runAgent(request, opts = {}) {
 			result = {
 				ok: false,
 				reason: "permission-denied",
-				message: `主人把「${PERM_CN[def.perm]}」权限关着，我没法做这个。请主人到控制台的「权限 · 打开东西」里打开。`,
+				message: `Master has the "${PERM_CN[def.perm]}" permission turned off, so I can't do this. Please turn it on in the console under "Permissions · Open things".`,
 			};
 		} else {
 			try {
@@ -445,7 +445,7 @@ async function runAgent(request, opts = {}) {
 				result = { ok: false, reason: "tool-error", message: String((e && e.message) || e) };
 			}
 			if (result && result.ok !== false) {
-				rec.appendPermLog(`${name}：${JSON.stringify(args).slice(0, 60)}`).catch(() => {});
+				rec.appendPermLog(`${name}: ${JSON.stringify(args).slice(0, 60)}`).catch(() => {});
 			}
 			if (result && result.ok !== false && say) {
 				rec.say(say).catch(() => {});
@@ -454,23 +454,23 @@ async function runAgent(request, opts = {}) {
 		}
 		steps.push({ tool: name, args, result, ms: Date.now() - t0 });
 		onStep({ type: "tool", tool: name, args, result, ms: Date.now() - t0 });
-		transcript.push(`你调用了 ${name}(${JSON.stringify(args)})`);
-		transcript.push(`工具结果：${JSON.stringify(result).slice(0, 700)}`);
+		transcript.push(`You called ${name}(${JSON.stringify(args)})`);
+		transcript.push(`Tool result: ${JSON.stringify(result).slice(0, 700)}`);
 		if (transcript.length > 14) transcript.splice(0, transcript.length - 14);
 		// 一次就能办完的动作（开网页 / 开软件 / 换录屏目录…）办成了就收尾 ——
 		// 小模型很容易接着瞎调工具绕圈，不如直接问她结果怎么说。
 		if (result && result.ok !== false && ONE_SHOT.has(name) && !(name === "record" && args.action === "status")) {
 			const reply = await wrapUp(transcript, petTimeout);
 			if (reply) rec.say(reply).catch(() => {});
-			return { ok: true, reply: reply || summarizeSteps(steps) || "办好了", steps, model: "" };
+			return { ok: true, reply: reply || summarizeSteps(steps) || "Done", steps, model: "" };
 		}
 	}
-	return { ok: true, reply: "步数用完了，先干到这儿。主人还要我继续吗？", steps, model: "", maxed: true };
+	return { ok: true, reply: "Out of steps — stopping here. Master, shall I continue?", steps, model: "", maxed: true };
 }
 
 /** 收尾：不再让它挑工具，只要一句中文（小模型写大白话比写 JSON 稳得多）。 */
 async function wrapUp(transcript, petTimeout) {
-	const prompt = transcript.slice(-8).join("\n\n") + "\n\n已经办完了。用一句中文（不超过 30 个字）告诉主人结果，不要 JSON、不要解释。";
+	const prompt = transcript.slice(-8).join("\n\n") + "\n\nAll done. Tell master the result in one short English sentence (under 30 words), no JSON, no explanation.";
 	const r = await think(WRAP_SYSTEM, prompt, Math.min(petTimeout, 90000), 200, "");
 	if (!r.ok) return "";
 	const t = stripThink(r.text).replace(/^["'「]|["'」]$/g, "").trim();

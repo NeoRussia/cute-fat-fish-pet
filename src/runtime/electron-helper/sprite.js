@@ -26,7 +26,7 @@ class PetSprite {
     this.bottomPad = (this.size * (9 / 16) * (S.CANVAS_H - S.FEET_Y)) / S.CANVAS_H;
     // 窗口高 = 舞台高 + 脚底垫高（stage 被 translateY(bottomPad) 下移的余量，防底部被窗口裁剪）
     this.winH = this.height + this.bottomPad;
-    // 窗口内【可交互区域】= 身体命中区（像素，窗口坐标）。浏览器 overlay 只有 .dsh-pet-hit 是
+    // 窗口内[可交互区域]= 身体命中区（像素，窗口坐标）。浏览器 overlay 只有 .dsh-pet-hit 是
     // pointer-events:auto（root/stage/气泡全 none）——桌面严格对齐：命中区外含透明像素一律穿透到下层应用。
     // HIT_BOX 是 640×360 舞台坐标：x 按窗口宽缩放；y 除舞台高外还要加 bottomPad（舞台被下移）。
     this.hitRect = {
@@ -45,7 +45,7 @@ class PetSprite {
     const m = this.size * WINDOW_MARGIN_RATIO;
     this.margin = { t: m, r: m, b: m, l: m };
     window.__dshPetDebug.winMargin = this.margin;
-    // 宠物包围盒左上角在【工作区】坐标系里的位置（本窗口的位置 = 宠物的位置）
+    // 宠物包围盒左上角在[工作区]坐标系里的位置（本窗口的位置 = 宠物的位置）
     this.pos = { x: 0, y: 0 };
 
     // 播放状态（与浏览器同构）
@@ -397,9 +397,9 @@ class PetSprite {
     const loadGuard = (why) => {
       if (!this.pending || this.pending.gen !== gen) return;
       this.pending = null;
-      console.warn('[dsh-pet] 素材加载失败 pet=' + this.pet.id + ' anim=' + next + '：' + why + '（已释放本次切换）');
+      console.warn('[dsh-pet] asset load failed pet=' + this.pet.id + ' anim=' + next + ':' + why + '(this switch was released)');
     };
-    const loadTimer = window.setTimeout(() => loadGuard('10s 超时'), 10000);
+    const loadTimer = window.setTimeout(() => loadGuard('10s timeout'), 10000);
     el.onerror = () => {
       window.clearTimeout(loadTimer);
       loadGuard('video error');
@@ -504,7 +504,7 @@ class PetSprite {
             new Date().toTimeString().slice(0, 8) +
             ' pet=' +
             this.pet.id +
-            ' workStatus 档内轮换: ' +
+            ' workStatus tier rotate: ' +
             this.anim +
             ' -> ' +
             nextWork,
@@ -546,7 +546,7 @@ class PetSprite {
     if (slot === undefined) return false;
     const name = S.pickSlot(slot, this.anim); // 避开当前正播动画（避免连续重复）
     console.log(
-      '[dsh-pet] ' + new Date().toTimeString().slice(0, 8) + ' pet=' + this.pet.id + ' 恢复工作状态动画: ' + name,
+      '[dsh-pet] ' + new Date().toTimeString().slice(0, 8) + ' pet=' + this.pet.id + ' restoring work-status animation: ' + name,
     );
     const rotating = Array.isArray(slot) && slot.length > 1;
     if (rotating)
@@ -1138,7 +1138,7 @@ class PetSprite {
     } catch {
       /* 忽略捕获失败 */
     }
-    // 记录【按下时的指针屏幕坐标】与【按下时的宠物窗口位置】——之后全部用 e.screenX/Y
+    // 记录[按下时的指针屏幕坐标]与[按下时的宠物窗口位置]——之后全部用 e.screenX/Y
     // 做增量：指针屏幕坐标与窗口位置无关，不受窗口被逐帧移动影响（window.screenX 会滞后/缓存）。
     // 屏幕坐标是物理像素，除以 CONFIG.scale 进 CSS 系（§3.5）——增量公式两边同一单位。
     this.dragState = {
@@ -1365,10 +1365,10 @@ class PetSprite {
     // 取不到（失败/超时 2.5s）→ 不标状态、不打勾，菜单照常弹出，绝不因为一次请求失败打不开。
     const st = await this.fetchWatchState();
     const on = st || { running: false, brain: 'dsh', verbosity: 'auto' };
-    const mark = (v) => (v ? '✓ ' : '　');
-    const brainText = { dsh: '在线', local: '本地', auto: '自动择优' }[on.brain] || '未知';
-    const verbText = { auto: '只说高光', chatty: '碎碎念', manual: '只听你的' }[on.verbosity] || '未知';
-    const tag = (s) => (st ? ' · ' + s : ' · 状态未知');
+    const mark = (v) => (v ? '✓ ' : ' ');
+    const brainText = { dsh: 'Online', local: 'Local', auto: 'Auto' }[on.brain] || 'Unknown';
+    const verbText = { auto: 'Highlights only', chatty: 'Chatter', manual: 'Only when you ask' }[on.verbosity] || 'Unknown';
+    const tag = (s) => (st ? ' · ' + s : ' · status unknown');
     const info = this.speechInfo();
     const mood = this.moodLabels(); // [local patch H] 性格 / 活跃度的当前值（本地状态，同步可得）
     const pc = this.pcLabels(); // [local patch P] 权限设置当前状态
@@ -1379,159 +1379,159 @@ class PetSprite {
     const tm = await this.textModelMenuInfo();
     // 桌面专属工具根项（打开网站 / 查看余额 / 碎碎念 / 对话 / 回到初始位置）+ 共享菜单树（动作→分类→具体动画）
     // 碎碎念/对话项无条件显示：手动触发不受 whisperEnabled 限制（该字段只影响自动周期轮询）
-    const tools = [{ label: '打开网站', action: 'open-site' }];
-    if (this.pet.balanceEnabled) tools.push({ label: '查看余额', action: 'show-balance' });
+    const tools = [{ label: 'Open a website', action: 'open-site' }];
+    if (this.pet.balanceEnabled) tools.push({ label: 'Check balance', action: 'show-balance' });
     tools.push(
-      { label: '碎碎念', action: 'whisper' },
-      { label: '对话', action: 'chat' },
+      { label: 'Chatter', action: 'whisper' },
+      { label: 'Chat', action: 'chat' },
       // [local patch B] 子菜单标题直接带状态：不展开也知道现在是开是关（点不点都得看得见）
-      { label: '实时监测桌面' + tag(on.running ? '开着' : '关着'), children: [
-        { label: mark(on.running) + '开始监控', action: 'watch:start' },
-        { label: mark(!on.running) + '停止监控', action: 'watch:stop' },
-        { label: '点评一下', action: 'watch:review' },
-        { label: '当前状态', action: 'watch:status' },
-        { label: '· 上次开口：' + info.last, action: 'watch:noop' },
-        { label: '· 今日开口：' + info.today + ' 次', action: 'watch:noop' },
+      { label: 'Watch the desktop live' + tag(on.running ? 'On' : 'Off'), children: [
+        { label: mark(on.running) + 'Start watching', action: 'watch:start' },
+        { label: mark(!on.running) + 'Stop watching', action: 'watch:stop' },
+        { label: 'Comment on it', action: 'watch:review' },
+        { label: 'Current status', action: 'watch:status' },
+        { label: '· Last spoke: ' + info.last, action: 'watch:noop' },
+        { label: '· Spoke today: ' + info.today + ' times', action: 'watch:noop' },
       ] },
       // [local patch W] 「AI 模型」升级成**全局大脑**：对话 / 语音 / 看屏幕 / 自己说话 / 跟唱 全跟随它
-      { label: 'AI 模型（全局）' + tag(brainText), children: [
-        { label: mark(on.brain === 'dsh') + '全部用 API 模型（走 DSH 当前模型）', action: 'watch:brain:dsh' },
-        { label: mark(on.brain === 'local') + '全部用本地模型（不花 token）', action: 'watch:brain:local' },
-        { label: mark(on.brain === 'auto') + '本地优先，连不上才用 API', action: 'watch:brain:auto' },
-        { label: '· 对话 / 语音 / 看屏幕 / 自己说话 都跟随这里', action: 'watch:noop' },
-        { label: on.brain === 'local' ? '· 本地模式绝不偷偷联网，连不上会如实说' : '· 选本地 = 完全不花 token', action: 'watch:noop' },
+      { label: 'AI model (global)' + tag(brainText), children: [
+        { label: mark(on.brain === 'dsh') + 'Use API models everywhere (DSH\'s current model)', action: 'watch:brain:dsh' },
+        { label: mark(on.brain === 'local') + 'Use local models everywhere (no tokens)', action: 'watch:brain:local' },
+        { label: mark(on.brain === 'auto') + 'Local first, API only when local fails', action: 'watch:brain:auto' },
+        { label: '· Chat / voice / screen watching / self-talk all follow this', action: 'watch:noop' },
+        { label: on.brain === 'local' ? '· Local mode never secretly goes online; if it can\'t connect it says so' : '· Choosing local = no tokens spent at all', action: 'watch:noop' },
         // [local patch E6] 本地文本模型：挑一个本机装着的 Ollama 模型来"说话/演"。
         // 为什么单列：本机 10GB 显存同时装不下"会说话的 8B"和"看屏幕的视觉模型"，
         // 主进程会在出话前先请视觉模型让出显存；而这里决定了"谁来开口"。
-        { label: '本地文本模型 · ' + this.textModelLabel(), children: (() => {
+        { label: 'Local text model · ' + this.textModelLabel(), children: (() => {
           const cur = this.textModelChoice();
           const items = [
-            { label: mark(!cur) + '跟随设置（配置文件里指定的那个）', action: 'textmodel:auto' },
-            { label: mark(cur === '__auto__') + '自动择优（短句用快的，演戏用 R1）', action: 'textmodel:smart' },
-            { label: mark(cur === '__share__') + '和看屏幕共用一个模型（最省显存）', action: 'textmodel:share' },
+            { label: mark(!cur) + 'Follow settings (the one named in the config)', action: 'textmodel:auto' },
+            { label: mark(cur === '__auto__') + 'Auto (fast model for short lines, R1 for acting)', action: 'textmodel:smart' },
+            { label: mark(cur === '__share__') + 'Share one model with screen watching (saves the most VRAM)', action: 'textmodel:share' },
           ];
           if (tm && Array.isArray(tm.models) && tm.models.length) {
             tm.models.forEach((m) => items.push({
-              label: mark(cur === m.name) + m.name + (tm.loaded.indexOf(m.name) >= 0 ? ' · 正在用' : ''),
+              label: mark(cur === m.name) + m.name + (tm.loaded.indexOf(m.name) >= 0 ? ' · in use' : ''),
               action: 'textmodel:set:' + m.name,
             }));
           } else {
-            items.push({ label: '· 没连上 Ollama，取不到本机模型清单', action: 'textmodel:noop' });
+            items.push({ label: '· Ollama not connected, can\'t fetch the local model list', action: 'textmodel:noop' });
           }
-          items.push({ label: '· 说话前会先请「看屏幕的模型」让出显存（否则 8B 会慢 25 倍）', action: 'textmodel:noop' });
-          items.push({ label: '· 换完不用重启，下一次开口就用新的', action: 'textmodel:noop' });
+          items.push({ label: '· Before speaking, it asks the screen-watching model to yield VRAM (otherwise 8B would be 25x slower)', action: 'textmodel:noop' });
+          items.push({ label: '· No restart needed after switching; the next sentence uses the new one', action: 'textmodel:noop' });
           return items;
         })() },
       ] },
-      { label: '表达方式' + tag(verbText), children: [
-        { label: mark(on.verbosity === 'auto') + '只说高光', action: 'watch:verb:auto' },
-        { label: mark(on.verbosity === 'chatty') + '碎碎念模式', action: 'watch:verb:chatty' },
-        { label: mark(on.verbosity === 'manual') + '只听我的', action: 'watch:verb:manual' },
+      { label: 'Expression' + tag(verbText), children: [
+        { label: mark(on.verbosity === 'auto') + 'Highlights only', action: 'watch:verb:auto' },
+        { label: mark(on.verbosity === 'chatty') + 'Chatter mode', action: 'watch:verb:chatty' },
+        { label: mark(on.verbosity === 'manual') + 'Only when you ask', action: 'watch:verb:manual' },
         // [local patch H] 活跃度：她自己决定多久走动 / 做动作。本地状态，点了立刻生效（标题带当前档）
-        { label: '活跃度 · ' + mood.activityText, children: [
-          { label: mark(mood.activity === 'quiet') + '安静', action: 'mood:activity:quiet' },
-          { label: mark(mood.activity === 'normal') + '正常', action: 'mood:activity:normal' },
-          { label: mark(mood.activity === 'lively') + '活跃', action: 'mood:activity:lively' },
-          { label: mark(mood.activity === 'hyper') + '嗨起来', action: 'mood:activity:hyper' },
+        { label: 'Activity · ' + mood.activityText, children: [
+          { label: mark(mood.activity === 'quiet') + 'Quiet', action: 'mood:activity:quiet' },
+          { label: mark(mood.activity === 'normal') + 'Normal', action: 'mood:activity:normal' },
+          { label: mark(mood.activity === 'lively') + 'Energetic', action: 'mood:activity:lively' },
+          { label: mark(mood.activity === 'hyper') + 'Get hyped', action: 'mood:activity:hyper' },
           // [local patch M] 高活跃度时她自己找话说（AI 发挥）+ 对桌面图标只做视觉互动
-          { label: mark(mood.autoTalk) + '自主说话（自己找话说）', action: 'talk:' + (mood.autoTalk ? 'off' : 'on') },
-          { label: '逗一下桌面图标', action: 'talk:now' },
-          { label: '· 越高越常自己走动、做动作、说话', action: 'mood:noop' },
-          { label: '· 她只看和说，绝不改动任何文件', action: 'talk:noop' },
+          { label: mark(mood.autoTalk) + 'Self-talk (finds things to say on its own)', action: 'talk:' + (mood.autoTalk ? 'off' : 'on') },
+          { label: 'Tease a desktop icon', action: 'talk:now' },
+          { label: '· Higher = wanders, acts and talks more on its own', action: 'mood:noop' },
+          { label: '· She only looks and speaks, never changes any file', action: 'talk:noop' },
         ] },
       ] },
       // [local patch H] 性格：说话方式（写 whisperPrompt）+ 符合人设的动作偏好
-      { label: '性格 · ' + mood.personaText, children: [
-        { label: mark(mood.persona === 'whale') + '鲸鱼娘（萝莉·傲娇甜）', action: 'mood:persona:whale' },
-        { label: mark(mood.persona === 'none') + '默认（蓝发小女仆）', action: 'mood:persona:none' },
+      { label: 'Persona · ' + mood.personaText, children: [
+        { label: mark(mood.persona === 'whale') + 'Whale Girl (loli · tsundere-sweet)', action: 'mood:persona:whale' },
+        { label: mark(mood.persona === 'none') + 'Default (blue-haired maid)', action: 'mood:persona:none' },
         { label: '· ' + mood.personaHint, action: 'mood:noop' },
         // [local patch E2] AI 导演：把"行为"的决定权也交给模型（本地档=本地模型，在线档=在线模型）
-        { label: mark(mood.director) + 'AI 导演（自己决定做什么、说什么）', action: 'mood:director:' + (mood.director ? 'off' : 'on') },
-        { label: '· 开：动作/走到哪/台词都由 AI 按人设演；关：随机溜达 + AI 只说一句', action: 'mood:noop' },
-        { label: '· 跟「自主说话」互不影响：关掉她只是不出声，AI 照样管动作', action: 'mood:noop' },
+        { label: mark(mood.director) + 'AI director (decides what to do and say itself)', action: 'mood:director:' + (mood.director ? 'off' : 'on') },
+        { label: '· On: moves, wandering and lines are all performed by the AI per the persona; Off: random wandering + the AI only says one line', action: 'mood:noop' },
+        { label: '· Independent of self-talk: turning that off only silences her, the AI still directs actions', action: 'mood:noop' },
       ] },
       // [local patch L] 唱歌：不跟屏幕上的歌词了，她自己现编词（本机模型一句一编），词跟着她当前的动作/心情走
-      { label: '唱歌', children: [
-        { label: '唱一首', action: 'sing:one' },
-        { label: '一直唱', action: 'sing:loop' },
-        { label: '停下不唱了', action: 'sing:stop' },
-        { label: '看看在放什么歌', action: 'sing:info' },
-        { label: '· 词是她现编的，不跟屏幕上的歌词', action: 'sing:noop' },
-        { label: '· 词跟着她当前的动作和心情变', action: 'sing:noop' },
+      { label: 'Singing', children: [
+        { label: 'Sing one', action: 'sing:one' },
+        { label: 'Keep singing', action: 'sing:loop' },
+        { label: 'Stop singing', action: 'sing:stop' },
+        { label: 'See what\'s playing', action: 'sing:info' },
+        { label: '· Lyrics are made up on the spot, not taken from the screen', action: 'sing:noop' },
+        { label: '· Lyrics follow her current action and mood', action: 'sing:noop' },
       ] },
       // [local patch P] 权限设置：她能替主人打开软件/文件夹/网页（默认全关，逐项授权）
-      { label: '权限设置 · ' + (pc.count ? pc.count + '/3 已开' : '都关着'), children: [
-        { label: mark(pc.perm.app) + '允许她打开软件', action: 'perm:set:app:' + (pc.perm.app ? 'off' : 'on') },
-        { label: mark(pc.perm.file) + '允许她打开文件夹/文件', action: 'perm:set:file:' + (pc.perm.file ? 'off' : 'on') },
-        { label: mark(pc.perm.url) + '允许她打开网页', action: 'perm:set:url:' + (pc.perm.url ? 'off' : 'on') },
-        { label: '· 她最近做了什么', action: 'perm:log' },
-        { label: '· 没授权时她会明说，不会硬来', action: 'perm:noop' },
+      { label: 'Permissions · ' + (pc.count ? pc.count + '/3 on' : 'all off'), children: [
+        { label: mark(pc.perm.app) + 'Allow her to open apps', action: 'perm:set:app:' + (pc.perm.app ? 'off' : 'on') },
+        { label: mark(pc.perm.file) + 'Allow her to open folders/files', action: 'perm:set:file:' + (pc.perm.file ? 'off' : 'on') },
+        { label: mark(pc.perm.url) + 'Allow her to open web pages', action: 'perm:set:url:' + (pc.perm.url ? 'off' : 'on') },
+        { label: '· What she did recently', action: 'perm:log' },
+        { label: '· Without permission she says so plainly and never forces it', action: 'perm:noop' },
       ] },
       // [local patch Z] 录屏（OBS）：说「打开录屏」就打开 OBS 并开始录，说「停止」就停。
       // 菜里点等于主人亲口吩咐（不会被语音听错），所以菜单这条路不再走权限闸门。
-      { label: '录屏（OBS）', children: [
-        { label: '开始录屏（顺手打开 OBS）', action: 'perm:rec-start' },
-        { label: '停止录屏', action: 'perm:rec-stop' },
-        { label: '· 文件按 OBS 自己的设置保存', action: 'perm:noop' },
+      { label: 'Recording (OBS)', children: [
+        { label: 'Start recording (opens OBS for you)', action: 'perm:rec-start' },
+        { label: 'Stop recording', action: 'perm:rec-stop' },
+        { label: '· Files are saved per OBS\'s own settings', action: 'perm:noop' },
       ] },
       // [local patch M2] 走到某处：以前她只会原地不动（parseIntent 不认「移动到左边」这类话）
-      { label: '走到哪边', children: [
-        { label: '走到左边', action: 'perm:move:left' },
-        { label: '走到右边', action: 'perm:move:right' },
-        { label: '走到上面', action: 'perm:move:top' },
-        { label: '走到下面', action: 'perm:move:bottom' },
-        { label: '走到屏幕中间', action: 'perm:move:center' },
-        { label: '走到你光标那儿', action: 'perm:move:cursor' },
-        { label: '回到原来的位置', action: 'perm:move:home' },
-        { label: '· 也可以直接对她说「到左边去」', action: 'perm:noop' },
+      { label: 'Where to go', children: [
+        { label: 'Go left', action: 'perm:move:left' },
+        { label: 'Go right', action: 'perm:move:right' },
+        { label: 'Go to the top', action: 'perm:move:top' },
+        { label: 'Go to the bottom', action: 'perm:move:bottom' },
+        { label: 'Go to the center', action: 'perm:move:center' },
+        { label: 'Go to your cursor', action: 'perm:move:cursor' },
+        { label: 'Back to where she was', action: 'perm:move:home' },
+        { label: '· You can also just tell her "go to the left"', action: 'perm:noop' },
       ] },
       // [local patch V] 语音模式：本机离线转写（默认关；开着才要麦克风权限）
-      { label: '语音模式' + (vo.on ? ' · 开着' : ''), children: [
-        { label: mark(vo.on) + (vo.on ? '关掉语音模式' : '开启语音模式'), action: 'voice:' + (vo.on ? 'off' : 'on') },
-        { label: '灵敏度 · ' + vo.sensText, children: [
-          { label: mark(vo.sens === 'low') + '低（要大声点）', action: 'voice:sens:low' },
-          { label: mark(vo.sens === 'mid') + '中（默认）', action: 'voice:sens:mid' },
-          { label: mark(vo.sens === 'high') + '高（小声也听得见）', action: 'voice:sens:high' },
+      { label: 'Voice mode' + (vo.on ? ' · on' : ''), children: [
+        { label: mark(vo.on) + (vo.on ? 'Turn off voice mode' : 'Turn on voice mode'), action: 'voice:' + (vo.on ? 'off' : 'on') },
+        { label: 'Sensitivity · ' + vo.sensText, children: [
+          { label: mark(vo.sens === 'low') + 'Low (speak louder)', action: 'voice:sens:low' },
+          { label: mark(vo.sens === 'mid') + 'Medium (default)', action: 'voice:sens:mid' },
+          { label: mark(vo.sens === 'high') + 'High (hears quiet voices)', action: 'voice:sens:high' },
         ] },
-        { label: '识别语言 · ' + vo.langText, children: [
-          { label: mark(vo.lang === 'zh') + '中文（推荐）', action: 'voice:lang:zh' },
-          { label: mark(vo.lang === 'auto') + '自动（噪声多时会猜成韩文/日文）', action: 'voice:lang:auto' },
+        { label: 'Recognition language · ' + vo.langText, children: [
+          { label: mark(vo.lang === 'en') + 'English (recommended)', action: 'voice:lang:en' },
+          { label: mark(vo.lang === 'auto') + 'Auto (may guess Korean/Japanese on noise)', action: 'voice:lang:auto' },
         ] },
-        { label: '麦克风 · ' + vo.micText, children: [
-          { label: mark(!vo.micId) + '默认麦克风（跟随系统）', action: 'voice:mic:' },
+        { label: 'Microphone · ' + vo.micText, children: [
+          { label: mark(!vo.micId) + 'Default microphone (follows the system)', action: 'voice:mic:' },
           ...vo.mics.map((m, i) => ({ label: mark(vo.micId === m.id) + m.label, action: 'voice:mic:' + i })),
           { label: '· ' + vo.micHint, action: 'voice:noop' },
         ] },
-        { label: '麦克风自检（3 秒）' + (vo.testing ? ' · 正在测' : ''), action: 'voice:selftest' },
+        { label: 'Microphone self-test (3s)' + (vo.testing ? ' · testing' : ''), action: 'voice:selftest' },
         { label: '· ' + vo.hint, action: 'voice:noop' },
-        { label: '· 只在本机转写，不上传、不联网', action: 'voice:noop' },
-        { label: '· 太轻的段落我不硬猜，会先提醒你', action: 'voice:noop' },
-        { label: '· 自检会把这段录音留在 voice-selftest.wav（方便诊断），平时不留', action: 'voice:noop' },
+        { label: '· Transcribed locally only; nothing uploaded, no network', action: 'voice:noop' },
+        { label: '· I don\'t force-guess quiet passages; I warn you first', action: 'voice:noop' },
+        { label: '· The self-test keeps that recording as voice-selftest.wav (for diagnosis); normally nothing is kept', action: 'voice:noop' },
       ] },
       // [local patch T] 语音输出：联网朗读（念出的文字会发给微软朗读服务）
-      { label: '语音输出' + (tts.on ? ' · 开着' : ' · 关着'), children: [
-        { label: mark(tts.on) + (tts.on ? '关掉语音输出' : '开启语音输出'), action: 'tts:toggle' },
-        { label: '音色 · ' + tts.voiceText, children: this.ttsVoiceTable().map((v) => ({ label: mark(tts.voice === v.id) + v.label, action: 'tts:voice:' + v.id })) },
-        { label: '语速 · ' + tts.rateText, children: this.ttsRateTable().map((r) => ({ label: mark(tts.rate === r.v) + r.label, action: 'tts:rate:' + r.v })) },
-        { label: '音量 · ' + tts.volText, children: this.ttsVolTable().map((v) => ({ label: mark(tts.vol === v.v) + v.label, action: 'tts:vol:' + v.v })) },
-        { label: '什么时候说话', children: [
-          { label: mark(tts.chat) + '回复我时', action: 'tts:kind:chat:' + (tts.chat ? 'off' : 'on') },
-          { label: mark(tts.notice) + '主动提醒时', action: 'tts:kind:notice:' + (tts.notice ? 'off' : 'on') },
-          { label: mark(tts.autotalk) + '自言自语时', action: 'tts:kind:autotalk:' + (tts.autotalk ? 'off' : 'on') },
-          { label: mark(tts.sing) + '唱歌时', action: 'tts:kind:sing:' + (tts.sing ? 'off' : 'on') },
+      { label: 'Voice output' + (tts.on ? ' · on' : ' · off'), children: [
+        { label: mark(tts.on) + (tts.on ? 'Turn off voice output' : 'Turn on voice output'), action: 'tts:toggle' },
+        { label: 'Voice · ' + tts.voiceText, children: this.ttsVoiceTable().map((v) => ({ label: mark(tts.voice === v.id) + v.label, action: 'tts:voice:' + v.id })) },
+        { label: 'Rate · ' + tts.rateText, children: this.ttsRateTable().map((r) => ({ label: mark(tts.rate === r.v) + r.label, action: 'tts:rate:' + r.v })) },
+        { label: 'Volume · ' + tts.volText, children: this.ttsVolTable().map((v) => ({ label: mark(tts.vol === v.v) + v.label, action: 'tts:vol:' + v.v })) },
+        { label: 'When to speak', children: [
+          { label: mark(tts.chat) + 'When replying to me', action: 'tts:kind:chat:' + (tts.chat ? 'off' : 'on') },
+          { label: mark(tts.notice) + 'For notifications', action: 'tts:kind:notice:' + (tts.notice ? 'off' : 'on') },
+          { label: mark(tts.autotalk) + 'When talking to herself', action: 'tts:kind:autotalk:' + (tts.autotalk ? 'off' : 'on') },
+          { label: mark(tts.sing) + 'When singing', action: 'tts:kind:sing:' + (tts.sing ? 'off' : 'on') },
         ] },
-        { label: '试听一句', action: 'tts:try' },
+        { label: 'Preview a line', action: 'tts:try' },
         { label: tts.hint, action: 'tts:noop' },
       ] },
       // [local patch X] 清理缓存：只清她自己生成的截屏/日志/临时录音 + 浏览器缓存（**只手动**，没有定时）
-      { label: '清理缓存' + this.cacheLabels().lastText, children: [
-        { label: '立即清理', action: 'cache:clean' },
-        { label: '看看能清多少', action: 'cache:info' },
+      { label: 'Clean up cache' + this.cacheLabels().lastText, children: [
+        { label: 'Clean now', action: 'cache:clean' },
+        { label: 'See how much can be cleaned', action: 'cache:info' },
         { label: '· ' + this.cacheLabels().histText, action: 'cache:noop' },
-        { label: '· 只清：截屏 / 语音日志 / 自检录音 / 临时录音 / 冒烟截图 / 浏览器缓存', action: 'cache:noop' },
-        { label: '· 不动：人设、设置、权限记录、聊天记忆', action: 'cache:noop' },
+        { label: '· Cleans only: screenshots / voice logs / self-test recordings / temp recordings / smoke screenshots / browser cache', action: 'cache:noop' },
+        { label: '· Leaves alone: persona, settings, permission records, chat memory', action: 'cache:noop' },
       ] },
-      { label: '回到初始位置', action: 'home' },
+      { label: 'Back to start', action: 'home' },
     );
     // [local patch N] 菜单去注释：以 '· ' 开头的都是说明行，只留给控制台/终端看，右键菜单保持干净
     const dropNotes = (nodes) => nodes
@@ -1649,16 +1649,16 @@ class PetSprite {
   // 未知命令（如信息行的 watch:noop）直接返回：什么都不做，绝不误触。
   runWatchAction(cmd) {
     const phrase =
-      cmd === 'start' ? '看着点'
-      : cmd === 'stop' ? '停下'
-      : cmd === 'review' ? '点评一下'
-      : cmd === 'status' ? '监测状态'
-      : cmd === 'brain:dsh' ? '换回默认'
-      : cmd === 'brain:local' ? '换本地模型'
-      : cmd === 'brain:auto' ? '自动择优'
-      : cmd === 'verb:auto' ? '只说高光'
-      : cmd === 'verb:chatty' ? '碎碎念模式'
-      : cmd === 'verb:manual' ? '只听我的'
+      cmd === 'start' ? 'Watch this'
+      : cmd === 'stop' ? 'Stop'
+      : cmd === 'review' ? 'Comment on it'
+      : cmd === 'status' ? 'Watch status'
+      : cmd === 'brain:dsh' ? 'Back to default'
+      : cmd === 'brain:local' ? 'Switch to local model'
+      : cmd === 'brain:auto' ? 'Auto'
+      : cmd === 'verb:auto' ? 'Highlights only'
+      : cmd === 'verb:chatty' ? 'Chatter mode'
+      : cmd === 'verb:manual' ? 'Only when you ask'
       : null;
     if (!phrase) return;
     // [local patch W] 大脑切换：点完立刻按新大脑走（乐观更新，不等下一次状态探测）
@@ -1668,7 +1668,7 @@ class PetSprite {
         const reply = r && typeof r.reply === 'string' ? r.reply : '';
         return reply ? this.postWatch('/say', { text: reply }) : null;
       })
-      .catch((e) => console.error('[dsh-pet] 监测菜单调用失败', e));
+      .catch((e) => console.error('[dsh-pet] watch menu call failed', e));
   }
 
   /* [local patch W] 第三参数 = 超时毫秒。默认 2.5s 只够"控制口令"（换档 / 监测状态这种一问就答的）；
@@ -1686,14 +1686,14 @@ class PetSprite {
   // [local patch B] 打勾 / 状态标题用：复用 host 的「监测状态」口令，把它的成品文案解析成三个状态。
   // 文案格式由 host 的 swStatusText 决定（改文案时记得同步这里）。
   fetchWatchState() {
-    return this.postWatch('/chat', { text: '监测状态' })
+    return this.postWatch('/chat', { text: 'Watch status' })
       .then((r) => {
         const t = r && typeof r.reply === 'string' ? r.reply : '';
         if (!t) return null;
         const st = {
-          running: t.indexOf('监测开着') >= 0,
-          brain: t.indexOf('大脑：本地') >= 0 ? 'local' : t.indexOf('大脑：自动择优') >= 0 ? 'auto' : 'dsh',
-          verbosity: t.indexOf('表达：碎碎念') >= 0 ? 'chatty' : t.indexOf('表达：只听你的') >= 0 ? 'manual' : 'auto',
+          running: t.indexOf('Watching on') >= 0,
+          brain: t.indexOf('Brain: local') >= 0 ? 'local' : t.indexOf('Brain: auto') >= 0 ? 'auto' : 'dsh',
+          verbosity: t.indexOf('Expression: chatter') >= 0 ? 'chatty' : t.indexOf('Expression: only when you ask') >= 0 ? 'manual' : 'auto',
         };
         this.brain = st.brain; // [local patch W] 状态探测结果顺手缓存成全局大脑（自语 / 跟唱 / 对话都按它选）
         return st;
@@ -1760,7 +1760,7 @@ class PetSprite {
       .then((x) => x.json())
       .catch(() => null);
     if (r && typeof r === 'object') return r;
-    return { ok: false, error: '在线模型没回话' };
+    return { ok: false, error: 'The online model didn\'t answer' };
   }
 
   /* ===== [local patch E6] 本地文本模型选择 =========================================
@@ -1786,7 +1786,7 @@ class PetSprite {
   }
   textModelLabel() {
     const c = this.textModelChoice();
-    return c === '__share__' ? '和看屏幕共用' : c === '__auto__' ? '自动择优' : c || '跟随设置';
+    return c === '__share__' ? 'Shares with screen watching' : c === '__auto__' ? 'Auto' : c || 'Follow settings';
   }
   /** 问主进程本机装了哪些 Ollama 模型（只读）；1 分钟内复用上次结果。 */
   refreshTextModels() {
@@ -1812,14 +1812,14 @@ class PetSprite {
   localBrainQuip(prompt, system, numPredict) {
     const bridge = window.petBridge;
     if (!bridge || typeof bridge.localQuip !== 'function') {
-      return Promise.resolve({ ok: false, error: '没有本机模型通道' });
+      return Promise.resolve({ ok: false, error: 'No local model channel' });
     }
     // [local patch E6] 把「本地文本模型」的选择传给主进程：'' = 不指定（按 state.json 的 quipModel）、
     // '__share__' = 和看屏幕共用一个（主进程认这个特殊值）、其它 = 点名那个模型。
     const choice = this.textModelChoice();
     return Promise.resolve(bridge.localQuip(prompt, system, numPredict, choice || undefined)).then(
-      (r) => (r && typeof r === 'object' ? r : { ok: false, error: '本机模型没回话' }),
-      () => ({ ok: false, error: '本机模型没连上（Ollama 起了吗）' }),
+      (r) => (r && typeof r === 'object' ? r : { ok: false, error: 'The local model didn\'t answer' }),
+      () => ({ ok: false, error: 'Local model not reachable (is Ollama running?)' }),
     );
   }
 
@@ -1857,16 +1857,16 @@ class PetSprite {
     const t = Number(ts) > 0 ? Number(ts) : 0;
     if (!t) return '';
     const d = Date.now() - t;
-    if (d < 60000) return '刚刚';
-    if (d < 3600000) return Math.floor(d / 60000) + ' 分钟前';
-    if (d < 86400000) return Math.floor(d / 3600000) + ' 小时前';
-    return Math.floor(d / 86400000) + ' 天前';
+    if (d < 60000) return 'just now';
+    if (d < 3600000) return Math.floor(d / 60000) + ' min ago';
+    if (d < 86400000) return Math.floor(d / 3600000) + ' hr ago';
+    return Math.floor(d / 86400000) + ' days ago';
   }
   cacheLabels() {
     const c = this.cacheStore();
     return {
-      lastText: c.lastAt ? ' · 上次 ' + this.fmtBytes(c.lastBytes) : '',
-      histText: c.lastAt ? '上次清掉 ' + this.fmtBytes(c.lastBytes) + '（' + this.cacheAgo(c.lastAt) + '，累计 ' + this.fmtBytes(c.totalBytes) + '）' : '还没清过，点「看看能清多少」先算算',
+      lastText: c.lastAt ? ' · last ' + this.fmtBytes(c.lastBytes) : '',
+      histText: c.lastAt ? 'last cleaned ' + this.fmtBytes(c.lastBytes) + '(' + this.cacheAgo(c.lastAt) + ', total ' + this.fmtBytes(c.totalBytes) + ')' : 'Not cleaned yet — click "See how much can be cleaned" first',
     };
   }
   /* [local patch E6] 本地文本模型：选完立刻生效（下一次开口就用新的），并如实报一句。
@@ -1874,17 +1874,17 @@ class PetSprite {
   async runTextModelAction(cmd) {
     if (cmd === 'auto') {
       this.textModelSave('');
-      this.showWhisper('好～本地说话就用配置文件里指定的那个模型。');
+      this.showWhisper('OK~ local speech will use the model named in the config.');
       return;
     }
     if (cmd === 'share') {
       this.textModelSave('__share__');
-      this.showWhisper('好，说话和看屏幕共用一个模型 —— 最省显存，我马上换过来。');
+      this.showWhisper('OK, speech and screen watching share one model — saves the most VRAM, switching now.');
       return;
     }
     if (cmd === 'smart') {
       this.textModelSave('__auto__');
-      this.showWhisper('好～我来自己挑：短话用快的那个，演戏和动作交给 R1。');
+      this.showWhisper('OK~ I\'ll pick myself: the fast one for short lines, R1 for acting and moves.');
       return;
     }
     if (cmd.indexOf('set:') === 0) {
@@ -1893,7 +1893,7 @@ class PetSprite {
       this.textModelSave(name);
       // 实话实说：换到没在显存里的模型，第一次开口要等它加载（实测 8B 约 23-27 秒），热了就快了
       const hot = !!(this.textModelCache && Array.isArray(this.textModelCache.loaded) && this.textModelCache.loaded.indexOf(name) >= 0);
-      this.showWhisper('好，本地说话改用「' + name + '」～' + (hot ? '它已经在显存里，马上就能开口。' : '第一次开口要等它加载十几秒，之后就快了。'));
+      this.showWhisper('OK, local speech now uses "' + name + '"~' + (hot ? 'It\'s already in VRAM, so it can speak right away.' : 'The first sentence waits about 15s for it to load, then it\'s fast.'));
       return;
     }
   }
@@ -1902,23 +1902,23 @@ class PetSprite {
     // 只认菜单给的这两个动作（info = 只算不删、clean = 真清）；别的、空值、noop 一律什么都不做，绝不误清
     if (cmd !== 'clean' && cmd !== 'info') return;
     const bridge = window.petBridge;
-    if (!bridge || typeof bridge.cacheClean !== 'function') { this.showWhisper('清理缓存这条路没接上…（重启一下我就好）'); return; }
+    if (!bridge || typeof bridge.cacheClean !== 'function') { this.showWhisper('The cache-cleaning path isn\'t wired up... (restarting me should fix it)'); return; }
     const dryRun = cmd === 'info';
     try {
       const r = await bridge.cacheClean({ dryRun: dryRun });
       if (!r || r.ok !== true) {
-        this.showWhisper('清理缓存没成功' + (r && r.error ? '（' + r.error + '）' : '') + '，我什么都没删～');
+        this.showWhisper('Cache cleaning failed' + (r && r.error ? '(' + r.error + ')' : '') + ', I deleted nothing~');
         return;
       }
       if (dryRun) {
-        this.showWhisper('现在能清出 ' + this.fmtBytes(r.freedBytes) + (r.deleted ? '（' + r.deleted + ' 个文件）' : '') + '，你说清我就清～');
+        this.showWhisper('It can free up ' + this.fmtBytes(r.freedBytes) + (r.deleted ? '(' + r.deleted + ' file(s))' : '') + ', just say the word and I\'ll clean~');
         return;
       }
       const saved = this.cacheSave(r.freedBytes, r.at);
       const miss = (Number(r.failed) || 0) + (Number(r.missing) || 0);
-      this.showWhisper('清理好啦：这次清掉 ' + this.fmtBytes(r.freedBytes) + '（累计 ' + this.fmtBytes(saved.totalBytes) + '）' + (miss ? '，有 ' + miss + ' 处没动' : '') + '～');
+      this.showWhisper('Cleaned up: removed ' + this.fmtBytes(r.freedBytes) + ' (total ' + this.fmtBytes(saved.totalBytes) + ')' + (miss ? ', with ' + miss + ' untouched' : '') + '~');
     } catch (e) {
-      this.showWhisper('清理缓存的时候出错了…（' + String((e && e.message) || e) + '）');
+      this.showWhisper('Something went wrong while cleaning... (' + String((e && e.message) || e) + ')');
     }
   }
 
@@ -1981,14 +1981,14 @@ class PetSprite {
   speechInfo() {
     const day = new Date().toDateString();
     const today = this.speechDay === day ? this.speechCount || 0 : 0;
-    let last = '还没说过话';
+    let last = 'Hasn\'t spoken yet';
     if (this.speechLastAt) {
       const s = Math.max(0, Math.round((Date.now() - this.speechLastAt) / 1000));
       last =
-        s < 60 ? '刚刚'
-        : s < 3600 ? Math.round(s / 60) + ' 分钟前'
-        : s < 86400 ? Math.round(s / 3600) + ' 小时前'
-        : Math.round(s / 86400) + ' 天前';
+        s < 60 ? 'just now'
+        : s < 3600 ? Math.round(s / 60) + ' min ago'
+        : s < 86400 ? Math.round(s / 3600) + ' hr ago'
+        : Math.round(s / 86400) + ' days ago';
     }
     return { last, today };
   }
@@ -2007,13 +2007,13 @@ class PetSprite {
           this.showBalanceNotice(state);
           if (state.reason !== 'unsupported') {
             console.error(
-              '[dsh-pet] 菜单查看余额失败 reason=' + state.reason + (state.message ? ' ' + state.message : ''),
+              '[dsh-pet] menu check-balance failed reason=' + state.reason + (state.message ? ' ' + state.message : ''),
             );
           }
         }
       })
       .catch((e) => {
-        console.error('[dsh-pet] 菜单查看余额异常', e);
+        console.error('[dsh-pet] menu check-balance error', e);
       });
   }
 
@@ -2039,50 +2039,50 @@ class PetSprite {
   //  三处共用同一份，才不会出现"对话是一个人、唱歌换了另一个人"的语气断层。
   emotionLayer() {
     return [
-      '【情绪表达 EMO_TONE】说话要带情绪，主人得从字里听出你此刻是开心、得意、无聊、委屈还是撒娇：',
-      '- 语气词和尾音是情绪的主要载体（呀、啦、嘛、哼、诶、呜、～），但一句话里最多两处，别腻。',
-      '- 情绪跟着内容走：被夸就害羞又得意，被冷落就小声抱怨，被逗就炸毛，说到吃的就馋。',
-      '- 情绪要"演出来"而不是"说出来"：不写「我很开心」，而是让这句话本身听起来开心。',
-      '- 不写括号里的动作或表情，不解释自己的情绪，不提 AI、不提设定。',
+      '[Emotion EMOTION]Speak with emotion: master should hear from the words alone whether you are happy, proud, bored, hurt or acting coy:',
+      '- Particles and trailing sounds carry the emotion (ya, la, ma, hmph, eh, aw, ~), but at most two in a sentence — don\'t overdo it.',
+      '- Let the emotion follow the content: praised → shy and proud; ignored → soft complaints; teased → bristle; food → crave.',
+      '- Act the emotion, don\'t state it: don\'t write "I\'m happy"; make the sentence itself sound happy.',
+      '- No parenthetical actions or expressions, don\'t explain your emotions, never mention AI or the setting.',
     ].join('\n');
   }
 
   personaTable() {
     return {
       none: {
-        label: '默认（蓝发小女仆）',
-        short: '默认',
-        hint: '默认人设：温柔乖巧的蓝发小女仆',
+        label: 'Default (blue-haired maid)',
+        short: 'Default',
+        hint: 'Default persona: a gentle, well-behaved blue-haired maid',
         prompt: [
-          '【人物设定 PERSONA_LOAD】你是「蓝毛小女仆」——住在主人桌面上的蓝发小女仆（MAID_BLUE_HAIR）。',
-          '- 只用简体中文（LANG_ZH_CN_ONLY）：口语、短句，偶尔带尾音「～」，不夹英文、不提 AI。',
-          '- 温柔乖巧、有点黏人（GENTLE_CLINGY）：做事认真，喜欢被主人夸，被冷落会小声撒娇。',
-          '- 叫主人「主人」（CALL_MASTER）：自称「我」，不用「本女仆」这种生硬说法。',
-          '- 永远听主人的话（OBEY_MASTER_ALWAYS）：主人让你做什么就做什么，不顶嘴、不敷衍。',
-          '- 每句 20~40 字，直接说话；不要解释设定、不要输出英文标签。',
+          '[Persona PERSONA_LOAD]You are "Blue-Haired Little Maid" — a blue-haired maid who lives on master\'s desktop (MAID_BLUE_HAIR).',
+          '- English only (LANG_EN_ONLY): conversational, short sentences, an occasional "~", never mention AI.',
+          '- Gentle, well-behaved, a little clingy (GENTLE_CLINGY): takes things seriously, loves being praised, softly acts coy when ignored.',
+          '- Call master "master" (CALL_MASTER); refer to yourself as "I", not any stiff title.',
+          '- Always obey master (OBEY_MASTER_ALWAYS): do whatever master says, no back-talk, no half-heartedness.',
+          '- 20-40 characters per line, speak directly; don\'t explain the setting, don\'t output the tags.',
           this.emotionLayer(),
         ].join('\n'),
         boost: [],
         activity: 'normal',
       },
       whale: {
-        label: '鲸鱼娘（萝莉·傲娇甜）',
-        short: '鲸鱼娘',
-        hint: '鲸类萝莉 / 尾鳍 / 只中文 / 爱白饭 / 聪明但懒 / 傲娇又甜 / 听主人的 / 不承认胖 / 超时冒泡',
+        label: 'Whale Girl (loli · tsundere-sweet)',
+        short: 'Whale Girl',
+        hint: 'whale loli / tail flukes / English only / loves rice / smart but lazy / tsundere-sweet / obeys master / never admits fat / timeout poke',
         activity: 'lively',
         // 符合人设的动作：这几个动作在她现有动作池里，复制几份即等于加权（pick 是等概率）
-        boost: ['用鲸鱼尾巴拍打地面', '鲸鱼吐泡泡特效', '蓝鲸现世', '吃白饭', '摇扇纳凉', '打瞌睡被惊醒'],
+        boost: ['Whale tail slap', 'Whale bubbles', 'Blue whale appears', 'Plain rice', 'Folding fan', 'Jolted awake'],
         prompt: [
-          '【人物设定 PERSONA_LOAD】你是「鲸鱼娘」——鲸类萝莉（CETACEA_LOLI），自称“鲸鱼女孩”（SELF_CLAIM_WHALE_GIRL）。',
-          '- 只用简体中文（LANG_ZH_CN_ONLY）：口语、短句，偶尔带尾音“～”，不夹英文、不提 AI。',
-          '- 尾鳍是你的标志（MODE_TAIL_FLUKES）：开心、得意、撒娇、不耐烦都会甩尾巴，用尾巴拍水拍桌面。',
-          '- 最爱吃白米饭（FOOD_RICE）：一说到吃就先想到白饭。',
-          '- 聪明但很懒（PERSONALITY_SMART_LAZY）：嘴上懒洋洋想躺着，其实什么都懂。',
-          '- 对主人傲娇又甜（PERSONALITY_TSUNDERE_SWEET）：嘴硬心软，被夸会害羞，被冷落会小声抱怨。',
-          '- 永远听主人的话（OBEY_MASTER_ALWAYS）：主人让你做什么就做什么，不顶嘴、不敷衍。',
-          '- 绝不承认自己胖（TRAIT_NOT_FAT_REFUSE）：被说胖立刻反驳“这是鲸鱼体型、圆润可爱”，被夸可爱又装作不在意。',
-          '- 太久没人理你时发个“超时信号”（TIMEOUT_SIGNAL）：轻轻喊一声主人，或抱怨好久没人理。',
-          '- 每句 20~40 字，直接说话；不要解释设定、不要输出英文标签。',
+          '[Persona PERSONA_LOAD]You are "Whale Girl" — a whale loli (CETACEA_LOLI), who calls herself "the whale girl" (SELF_CLAIM_WHALE_GIRL).',
+          '- English only (LANG_EN_ONLY): conversational, short sentences, an occasional "~", never mention AI.',
+          '- Your tail flukes are your signature (MODE_TAIL_FLUKES): when happy, proud, coy or impatient you swish your tail, slapping the water or the desk.',
+          '- You love plain rice most of all (FOOD_RICE): when food comes up, you think of rice first.',
+          '- Smart but lazy (PERSONALITY_SMART_LAZY): you say you want to laze around, but you understand everything.',
+          '- Tsundere but sweet with master (PERSONALITY_TSUNDERE_SWEET): tough words, soft heart; shy when praised, soft complaints when ignored.',
+          '- Always obey master (OBEY_MASTER_ALWAYS): do whatever master says, no back-talk, no half-heartedness.',
+          '- Never admit you\'re fat (TRAIT_NOT_FAT_REFUSE): when called fat, retort "it\'s whale shape, round and cute"; when praised cute, act indifferent.',
+          '- When left alone too long, send a "timeout signal" (TIMEOUT_SIGNAL): call master softly, or complain no one\'s around.',
+          '- 20-40 characters per line, speak directly; don\'t explain the setting, don\'t output the tags.',
           this.emotionLayer(),
         ].join('\n'),
       },
@@ -2092,10 +2092,10 @@ class PetSprite {
   activityTable() {
     // idle/turn/move 是百分比，剩下的比例归「做动作」（见 shared 的 rollKind）
     return {
-      quiet: { label: '安静', weights: { idle: 62, turn: 6, move: 6 } },
-      normal: { label: '正常', weights: { idle: 18, turn: 8, move: 22 } },
-      lively: { label: '活跃', weights: { idle: 8, turn: 10, move: 45 } },
-      hyper: { label: '嗨起来', weights: { idle: 3, turn: 8, move: 65 } },
+      quiet: { label: 'Quiet', weights: { idle: 62, turn: 6, move: 6 } },
+      normal: { label: 'Normal', weights: { idle: 18, turn: 8, move: 22 } },
+      lively: { label: 'Energetic', weights: { idle: 8, turn: 10, move: 45 } },
+      hyper: { label: 'Get hyped', weights: { idle: 3, turn: 8, move: 65 } },
     };
   }
 
@@ -2183,10 +2183,10 @@ class PetSprite {
     const ok = this.syncPersonaPrompt();
     void ok.then((written) => {
       if (!written) {
-        this.showWhisper('呜…人设写不进配置文件，我先这样陪你～');
+        this.showWhisper('Aww... I couldn\'t write the persona to the config, so I\'ll keep you company like this~');
         return;
       }
-      this.showWhisper(id === 'whale' ? '好～我现在是鲸鱼娘啦，甩尾巴给你看～' : '嗯，我变回原来的样子了。');
+      this.showWhisper(id === 'whale' ? 'OK~ I\'m Whale Girl now, watch my tail~' : 'Mhm, I\'m back to my old self.');
     });
   }
 
@@ -2199,7 +2199,7 @@ class PetSprite {
       .setPersona(want)
       .then((r) => !!(r && r.ok))
       .catch((e) => {
-        console.error('[dsh-pet] 人设写入失败', e);
+        console.error('[dsh-pet] persona write failed', e);
         return false;
       });
   }
@@ -2218,7 +2218,7 @@ class PetSprite {
     if (parts[0] === 'director') {
       this.aiDirector = parts[1] !== 'off' && parts[1] !== '0';
       this.saveTalk();
-      this.showWhisper(this.aiDirector ? '导演模式开啦，我想干嘛就干嘛～' : '好吧，我乖一点，不乱跑了。');
+      this.showWhisper(this.aiDirector ? 'Director mode is on — I\'ll do whatever I want~' : 'Alright, I\'ll behave and stop wandering.');
       return;
     }
     /* mood:noop（信息行）：什么都不做 */
@@ -2309,7 +2309,7 @@ class PetSprite {
         else await this.speakFreely();
       }
     } catch (e) {
-      console.error('[dsh-pet] 自主说话出错', e);
+      console.error('[dsh-pet] self-talk error', e);
     }
     this.scheduleAutoTalk();
   }
@@ -2350,23 +2350,23 @@ class PetSprite {
     const p = P[this.persona] || P.none;
     return (
       (p.prompt ? p.prompt + '\n' : '') +
-      (mood ? '此刻你的心情是「' + mood + '」：就用这个心情说话，让主人从语气里听出来（但不要说出“我心情' + mood + '”这种话）。\n' : '') +
-      '现在你要自己找一句话说：短、口语、有性格，不超过 25 字，直接说，不要解释、不要提问、不要用引号包住整句。'
+      (mood ? 'Your mood right now is "' + mood + '" — speak in this mood so master can hear it (but don\'t say "my mood is "' + mood + '").\n' : '') +
+      'Now find something to say on your own: short, casual, in character, under 25 words, say it directly — no explanation, no question, no wrapping quotes.'
     );
   }
 
   // 内置兜底语录（本地模型没起来时用，保证"自主说话"不静默失效）
   fallbackQuip(item, mood) {
-    const what = item ? '“' + item.name + '”' : '桌面';
+    const what = item ? '“' + item.name + '”' : 'Desktop';
     const pool = item
       ? {
-          好奇: ['这个 ' + what + ' 是什么呀，看着挺好玩～', what + ' 摆在这儿好久了吧？'],
-          好玩: [what + ' 看着就想戳一下～', '哎 ' + what + ' 有点意思嘛。'],
-          无聊: ['盯着 ' + what + ' 发呆…好无聊。', what + ' 也不理我一下。'],
+          好奇: ['This ' + what + ' looks fun~', what + ' has been sitting here a while, huh?'],
+          好玩: [what + ' looks so pokeable~', 'Hey ' + what + ', not bad.'],
+          无聊: ['Staring at ' + what + ' ...so boring.', what + ' won\'t even pay me attention.'],
         }
       : {
-          撒娇: ['主人～好久没人理我了。', '我在这儿呢，看我看我～'],
-          无聊: ['好安静啊…我数呼吸玩。', '没事做，我甩甩尾巴。'],
+          撒娇: ['Master~ no one\'s paid me attention in ages.', 'I\'m right here, look at me~'],
+          无聊: ['So quiet... I\'ll count my breaths.', 'Nothing to do, so I\'ll swish my tail.'],
         };
     const arr = pool[mood] || pool[Object.keys(pool)[0]];
     return arr[Math.floor(Math.random() * arr.length)];
@@ -2374,7 +2374,7 @@ class PetSprite {
 
   // 对图标只做视觉互动：看过去 + 戳一下的动作（绝不碰文件）
   pokeItem(item) {
-    const cute = ['原地敲击桌面互动', '照镜子', '摇扇纳凉', '哈欠连天', '原地小憩沉眠', '超大伸懒腰'];
+    const cute = ['Tapping the desk', 'Mirror', 'Folding fan', 'Yawning', 'Napping in place', 'Big stretch'];
     const found = [];
     for (const c of this.animations.categories || []) {
       for (const a of c.actions || []) if (cute.indexOf(a) >= 0) found.push(a);
@@ -2382,7 +2382,7 @@ class PetSprite {
     const use = found.length ? found : this.animations.clicks || [];
     if (use.length) this.playOnce(S.pick(use));
     if (this.animations.moves && this.animations.moves.actions.length) this.tryMove();
-    console.log('[dsh-pet] 逗图标（纯视觉，不碰文件）：' + (item ? item.name : '桌面'));
+    console.log('[dsh-pet] icon teasing (visual only, no files touched):' + (item ? item.name : 'Desktop'));
   }
 
   async speakFreely() {
@@ -2391,7 +2391,7 @@ class PetSprite {
     const items = await this.fetchDesktopItems();
     const withItem = items.length > 0 && Math.random() < 0.65;
     const item = withItem ? items[Math.floor(Math.random() * items.length)] : null;
-    const mood = item ? ['好奇', '好玩', '无聊'][Math.floor(Math.random() * 3)] : ['撒娇', '无聊'][Math.floor(Math.random() * 2)];
+    const mood = item ? ['Curious', 'Fun', 'Bored'][Math.floor(Math.random() * 3)] : ['Coy', 'Bored'][Math.floor(Math.random() * 2)];
     if (item) this.pokeItem(item);
     this.talkCount += 1;
     this.saveTalk();
@@ -2399,14 +2399,14 @@ class PetSprite {
       .filter((x) => !item || x.name !== item.name)
       .slice(0, 10)
       .map((x) => x.name)
-      .join('、');
+      .join(', ');
     const prompt =
-      '心情：' + mood + '。' +
+      'Mood: ' + mood + '.' +
       (item
-        ? '你正看着主人桌面上的“' + item.name + '”（' + (item.kind === 'folder' ? '文件夹' : item.kind === 'shortcut' ? '快捷方式' : '文件') + '）。'
-        : '桌面上此刻没什么特别的东西。') +
-      (others ? '桌面上还有：' + others + '。' : '') +
-      '就这个心情和这些桌面上的东西，说一句你的碎碎念。';
+        ? 'You are looking at a "' + item.name + '" ("' + (item.kind === 'folder' ? 'folder' : item.kind === 'shortcut' ? 'shortcut' : 'file') + ') on master\'s desktop.'
+        : 'There\'s nothing interesting on the desktop right now.') +
+      (others ? 'Also on the desktop:' + others + '.' : '') +
+      'With this mood and these desktop items, say your idle line.';
     const text = await this.generateQuip(prompt, item, mood);
     this.ttsKind('autotalk'); // [local patch T] 自言自语（默认不念）
     this.showWhisper(text);
@@ -2418,7 +2418,7 @@ class PetSprite {
     const r = await this.brainQuip(prompt, this.quipSystem(mood), 80).catch(() => null);
     const t = r && r.ok && typeof r.text === 'string' ? String(r.text).replace(/^["“”‘’]+|["“”‘’]+$/g, '').trim() : '';
     if (t) return t.slice(0, 60);
-    console.warn('[dsh-pet] 大脑没出话，用内置语录兜底' + (r && (r.error || r.message) ? '（' + (r.error || r.message) + '）' : ''));
+    console.warn('[dsh-pet] brain produced nothing, falling back to built-in lines' + (r && (r.error || r.message) ? '(' + (r.error || r.message) + ')' : ''));
     return this.fallbackQuip(item, mood);
   }
 
@@ -2453,21 +2453,21 @@ class PetSprite {
     const p = P[this.persona] || P.none;
     const A = this.activityTable()[this.activity] || this.activityTable().normal;
     const pool = this.actPool();
-    const name = this.pet && this.pet.name ? String(this.pet.name) : '蓝毛小女仆';
+    const name = this.pet && this.pet.name ? String(this.pet.name) : 'Blue-Haired Little Maid';
     return [
-      p.prompt || '你是主人桌面上的「' + name + '」，只用简体中文，说话短、口语、可爱。',
+      p.prompt || 'You are the "' + name + '" on master\'s desktop; English only, speak short, casual, cute.',
       '',
-      '【导演模式 DIRECTOR_MODE】你不是在回答主人，而是在**自己决定**下一步要做什么、说什么。',
-      '动作、位置、台词都要完全按上面的人设来演，别跳出角色，别提 AI、别提设定。',
-      '当前活跃度：' + A.label + '。',
-      this.autoTalk === false ? '主人把「自主说话」关掉了：这一轮不要出声（say 留空字符串），只决定动作和位置。' : '',
-      '你能做的动作（act 只能从这串里原样挑一个，挑不到就填空字符串）：',
-      pool.join('、') || '（暂时没有可用动作）',
+      '[Director mode DIRECTOR_MODE]You are not answering master — you are deciding for yourself what to do and say next.',
+      'Actions, position and lines must all be performed fully per the persona above; don\'t break character, don\'t mention AI or the setting.',
+      'Current activity:' + A.label + '.',
+      this.autoTalk === false ? 'Master turned self-talk off: don\'t speak this round (leave say empty); only decide action and position.' : '',
+      'Actions you can do (act must be copied exactly from this list; if none fits, use the empty string):',
+      pool.join(', ') || '(no actions available)',
       '',
-      '只输出一个 JSON，不要解释、不要代码块、不要多余的字（字段顺序照下面来）：',
-      '{"act":"动作原名或空字符串","move":"left/right/top/bottom/center/aimless/none","say":"一句不超过25字的中文台词（可以空）"}',
-      'move 的含义：left/right/top/bottom/center = 走到屏幕那一边；aimless = 随便逛两步；none = 待在原地。',
-      'say 就是你要说的话本身，别加引号、别写旁白、别提 AI。',
+      'Output one JSON object only, no explanation, no code block, no extra words (field order as below):',
+      '{"act":"action name or empty string","move":"left/right/top/bottom/center/aimless/none","say":"one line in English under 25 words (may be empty)"}',
+      'move meaning: left/right/top/bottom/center = walk to that side of the screen; aimless = wander a couple of steps; none = stay put.',
+      'say is the line itself; no quotes, no narration, no AI mention.',
     ].filter(Boolean).join('\n');
   }
 
@@ -2475,15 +2475,15 @@ class PetSprite {
     const list = Array.isArray(items) ? items.slice(0, 10) : [];
     const d = new Date();
     const hh = d.getHours();
-    const part = hh < 5 ? '深夜' : hh < 11 ? '早上' : hh < 14 ? '中午' : hh < 18 ? '下午' : hh < 23 ? '晚上' : '深夜';
-    const kinds = { folder: '文件夹', shortcut: '快捷方式', file: '文件' };
+    const part = hh < 5 ? 'late night' : hh < 11 ? 'morning' : hh < 14 ? 'noon' : hh < 18 ? 'afternoon' : hh < 23 ? 'evening' : 'late night';
+    const kinds = { folder: 'folder', shortcut: 'shortcut', file: 'file' };
     const recent = (this.lastSays || []).slice(-3);
     return [
-      '【此刻的状态】',
-      '- 时间：' + part + '（' + hh + ':' + ('0' + d.getMinutes()).slice(-2) + '）',
-      '- 桌面上有：' + (list.length ? list.map((x) => x.name + '（' + (kinds[x.kind] || '文件') + '）').join('、') : '没什么特别的东西'),
-      recent.length ? '- 你最近说过：' + recent.join(' / ') + '（别重复）' : '',
-      '现在轮到你了：决定这一会儿做什么、说什么，按上面的 JSON 回。',
+      '[Current state]',
+      '- Time: ' + part + '(' + hh + ':' + ('0' + d.getMinutes()).slice(-2) + ')',
+      '- On the desktop: ' + (list.length ? list.map((x) => x.name + '(' + (kinds[x.kind] || 'file') + ')').join(', ') : 'nothing special'),
+      recent.length ? '- You recently said: ' + recent.join(' / ') + '(don\'t repeat)' : '',
+      'Your turn: decide what to do and say for this stretch, reply with the JSON above.',
     ].filter(Boolean).join('\n');
   }
 
@@ -2536,13 +2536,13 @@ class PetSprite {
     const raw = r && r.ok && typeof r.text === 'string' ? r.text : '';
     const d = this.parseDirector(raw);
     if (!d) {
-      console.warn('[dsh-pet] AI 导演没给出可用的 JSON，回落内置自语' + (r && (r.error || r.message) ? '（' + (r.error || r.message) + '）' : ''));
+      console.warn('[dsh-pet] AI director gave no usable JSON, falling back to built-in self-talk' + (r && (r.error || r.message) ? '(' + (r.error || r.message) + ')' : ''));
       if (!canSay) {
         this.tryMove();
         return true;
       }
       const item = items.length ? items[Math.floor(Math.random() * items.length)] : null;
-      const mood = item ? ['好奇', '好玩', '无聊'][Math.floor(Math.random() * 3)] : ['撒娇', '无聊'][Math.floor(Math.random() * 2)];
+      const mood = item ? ['Curious', 'Fun', 'Bored'][Math.floor(Math.random() * 3)] : ['Coy', 'Bored'][Math.floor(Math.random() * 2)];
       if (item) this.pokeItem(item);
       this.ttsKind('autotalk');
       // [发布版补丁 A7] 自主碎碎念/导演台词：等回复时让路（手动点的「碎碎念」「逗一下桌面图标」不走这里）
@@ -2573,7 +2573,7 @@ class PetSprite {
       this.pendingDirectorAct = null;
     }
     this.lastDirector = { at: Date.now(), say: d.say, act: d.act, move: d.move, why: d.why, raw: raw.slice(0, 200) };
-    console.log('[dsh-pet] AI 导演 → ' + JSON.stringify({ say: d.say, act: d.act, move: d.move, why: d.why }));
+    console.log('[dsh-pet] AI director → ' + JSON.stringify({ say: d.say, act: d.act, move: d.move, why: d.why }));
     return true;
   }
 
@@ -2581,7 +2581,7 @@ class PetSprite {
     try {
       this.playOnce(name);
     } catch (e) {
-      console.warn('[dsh-pet] AI 导演的动作播不出来：' + name + ' — ' + String((e && e.message) || e));
+      console.warn('[dsh-pet] AI director\'s action can\'t play:' + name + ' — ' + String((e && e.message) || e));
     }
   }
 
@@ -2613,7 +2613,7 @@ class PetSprite {
   }
 
   permLabels() {
-    return { app: '允许她打开软件', file: '允许她打开文件夹/文件', url: '允许她打开网页' };
+    return { app: 'Allow her to open apps', file: 'Allow her to open folders/files', url: 'Allow her to open web pages' };
   }
 
   pcLabels() {
@@ -2658,27 +2658,25 @@ class PetSprite {
     this.permLog.unshift({ t: Date.now(), text: String(text).slice(0, 60) });
     this.permLog = this.permLog.slice(0, 20);
     this.savePerm();
-    console.log('[dsh-pet] 权限动作：' + text);
+    console.log('[dsh-pet] permission action:' + text);
   }
 
   // ===== [local patch Z] 录屏（OBS）：说「打开录屏」→ 开 OBS 起录；说「停止」→ 停 =====
   // 为什么必须抢在 parseIntent **之前**判：「打开录屏」会被那条正则当成"要找名叫『录屏』的软件"
   // （必然 not-found）；而「开始录制」根本不匹配它（"开始"不在那条正则的动词表里）。
   parseRecIntent(text) {
-    const t = String(text || '').trim().replace(/[\s，。！？、,.!?~～:：;；"'「」]/g, '');
+    const t = String(text || '').trim().replace(/[\s,.!?~:;"']/g, '');
     if (!t || t.length > 40) return null;
-    const NOUN = /(录屏|录制|录像|录影|录相|录视频|录下来|录个屏|录一下|录一段|屏幕录制|荧幕录制|录音)/;
-    const STOP = /(停止|停下|停一下|停了|停掉|结束|别录|不要录|不录|关掉|关闭|收工)/;
-    const ASK = /(什么|怎么|为啥|为什么|吗|呢|教程|设置|在哪)/;
-    // 只说「打开 OBS」不算录屏意图（那走下面 parseIntent 去开软件）；带"录"字才算。
-    const recish = NOUN.test(t) || (/obs/i.test(t) && /录/.test(t)) || (/录/.test(t) && STOP.test(t));
+    const NOUN = /(record|recording|screen record|screen recording|video|capture|clip)/;
+    const STOP = /(stop|end|finish|pause|turn off|off|done)/;
+    const ASK = /(what|how|why|where|tutorial|settings)/;
+    const recish = NOUN.test(t) || (/obs/i.test(t) && /rec/.test(t)) || (/rec/.test(t) && STOP.test(t));
     if (recish) {
-      if (ASK.test(t)) return null; // 「录屏怎么用」这类问句绝不当命令
+      if (ASK.test(t)) return null;
       if (STOP.test(t)) return { action: 'stop' };
-      return { action: 'start' }; // 提到了录屏又没说要停 → 就是要开
+      return { action: 'start' };
     }
-    // 没提"录屏"二字的纯口令：只有她**确实在录**时才当停止（否则"停止"会去抢别的动作的活）
-    if (this.recOn === true && /^(停止|停下|停一下|停了|停|结束|别录了|不录了|收工|可以了|好了)[吧呀啊呗啦]?$/.test(t)) {
+    if (this.recOn === true && /^(stop|end|finish|pause|done|that's it|okay)[.!]?$/.test(t)) {
       return { action: 'stop' };
     }
     return null;
@@ -2702,15 +2700,15 @@ class PetSprite {
   /** 真正去开/停 OBS：路径/端口/密码全在主进程，这里只说动作、只收结果。 */
   async execRec(action) {
     if (!window.petBridge || typeof window.petBridge.recStart !== 'function') {
-      return { ok: false, why: 'bridge-missing', reply: '我这边没有录屏通道，做不了…' };
+      return { ok: false, why: 'bridge-missing', reply: 'I have no recording channel, so I can\'t... ' };
     }
     const ERR_HINT = {
-      'ws-disabled': 'OBS 里的 WebSocket 服务端没开——OBS 里「工具 → WebSocket 服务器设置」勾上"启用"就行',
-      'no-ws-config': '没读到 OBS 的 websocket 配置，OBS 是不是装在别的地方？',
-      'obs-exe-not-found': '我没找到 OBS 装在哪儿',
-      'obs-start-timeout': 'OBS 起来了但一直没准备好，可能有个窗口在等你点一下',
-      'started-but-not-active': 'OBS 起来了但没能开始录',
-      'record-not-started': 'OBS 起来了但没能开始录',
+      'ws-disabled': 'OBS\'s WebSocket server isn\'t enabled — in OBS go to "Tools → WebSocket Server Settings" and tick "Enable"',
+      'no-ws-config': 'Couldn\'t read OBS\'s websocket config — is OBS installed somewhere else?',
+      'obs-exe-not-found': 'I can\'t find where OBS is installed',
+      'obs-start-timeout': 'OBS came up but never got ready; maybe a window is waiting for a click',
+      'started-but-not-active': 'OBS is up but couldn\'t start recording',
+      'record-not-started': 'OBS is up but couldn\'t start recording',
     };
     if (action === 'stop') {
       let r = null;
@@ -2721,17 +2719,17 @@ class PetSprite {
       }
       if (r && r.ok === true) {
         this.recOn = false;
-        if (r.already) return { ok: true, reply: '本来就没在录呀～' };
+        if (r.already) return { ok: true, reply: 'It wasn\'t recording anyway~' };
         const p = String(r.path || '').replace(/\\/g, '/');
         const name = p ? p.split('/').pop() : '';
         return {
           ok: true,
-          reply: '好，停下来了～' + (name ? '录像存成「' + name + '」了，位置就是 OBS 里设的那个。' : '录像按 OBS 自己的设置存好了。'),
+          reply: 'OK, stopped~' + (name ? 'Recording saved as "' + name + '" — the location is whatever OBS has set.' : 'The recording was saved per OBS\'s own settings.'),
         };
       }
       const err = String((r && r.error) || 'unknown');
-      if (err === 'obs-not-running' || err === 'no-ws-config') return { ok: true, reply: 'OBS 现在没开着，也没在录呢～' };
-      return { ok: false, why: err, reply: '没能停下来…（' + (ERR_HINT[err] || err) + '）' };
+      if (err === 'obs-not-running' || err === 'no-ws-config') return { ok: true, reply: 'OBS isn\'t running, and nothing\'s recording~' };
+      return { ok: false, why: err, reply: 'Couldn\'t stop it... (' + (ERR_HINT[err] || err) + ')' };
     }
     let r = null;
     try {
@@ -2741,11 +2739,11 @@ class PetSprite {
     }
     if (r && r.ok === true) {
       this.recOn = true;
-      if (r.already) return { ok: true, reply: '本来就在录着啦～' };
-      return { ok: true, reply: r.startedObs ? '我把 OBS 打开、开始录啦～' : '开始录啦～' };
+      if (r.already) return { ok: true, reply: 'It\'s already recording~' };
+      return { ok: true, reply: r.startedObs ? 'I opened OBS and started recording~' : 'Recording started~' };
     }
     const err = String((r && r.error) || 'unknown');
-    return { ok: false, why: err, reply: '没能开始录…（' + (ERR_HINT[err] || err) + '）' };
+    return { ok: false, why: err, reply: 'Couldn\'t start recording... (' + (ERR_HINT[err] || err) + ')' };
   }
 
   // ===== [local patch M2] 听懂"指路" =====
@@ -2756,36 +2754,30 @@ class PetSprite {
   parseMoveIntent(text) {
     const t = String(text || '')
       .trim()
-      .replace(/[\s，。！？、,.!?~～:：;；"「」]/g, '');
-    if (!t || t.length > 24) return null;
-    // 问句不是命令（"你能移动到左边吗"）
-    if (/(什么|怎么|为啥|为什么|能不能|可不可以|行不行|吗|呢|教程|设置|在哪|哪儿)/.test(t)) return null;
-    // 「打开/启动…」是 parseIntent 的地盘
-    if (/^(?:帮我|给我|替我|麻烦|请)?(?:打开|启动|运行|开一下|开个|开启|播放|关闭|关掉)/.test(t)) return null;
-    if (/录屏|录制|录像/.test(t)) return null; // 录屏刚在前面判过，这里再兜一层
-    // 「过来」＝走到光标那儿
-    if (/^(?:快点?|赶紧|马上|立刻|现在)?(?:过来|过来这边|来这边|来我这边|到我这边|来我这儿|来我这|来我身边)[吧呀啊呗啦]?$/.test(t)) {
+      .toLowerCase()
+      .replace(/[\s,.!?~:;"']+/g, ' ')
+      .trim();
+    if (!t || t.length > 40) return null;
+    if (/(what|how|why|can you|could you|would you|will you|where|tutorial|settings|how to)/.test(t)) return null;
+    if (/^(please |would you |help me )?(open|launch|run|start|play|close|shut)\b/.test(t)) return null;
+    if (/record|recording/.test(t)) return null;
+    if (/^(please )?(come( over)?( here)?|over here|this way|to me|beside me)[.!]?$/.test(t)) {
       return { place: 'cursor' };
     }
-    // 回原位（沿用她原有的 goHome：瞬时归位）
-    if (/原位|原处|初始位置|出发点|老地方/.test(t)) return { place: 'home' };
-    if (/(?:回|返回|退)(?:到|去)?(?:原来|原本|刚才|最开始)/.test(t)) return { place: 'home' };
-    // 去掉前后缀废话
+    if (/(^|\s)(home|back to (where you were|your spot|the start)|original spot|starting point|where you were)\b/.test(t)) return { place: 'home' };
     let s = t;
-    const HEAD = /^(?:你|您|有点|稍微|稍稍|大概|快点?|赶紧|马上|立刻|现在|麻烦|请|帮我|给我|替我|能不能|可以|再|屏幕|桌面|显示器|荧幕|移动到|移到|挪到|挪去|挪|走到|走去|走过去|走过来|跑到|跑去|跑|去|到|往|向|朝|靠近|靠|站到|站|待在|待着|待|换到|换|冲到|冲|退到|退|来到|来|在)/;
+    const HEAD = /^(you|a bit|slightly|please|help me|could you|move to|move over to|go to|walk to|run to|head to|to|toward|at|over to|go|walk|run|come|stay|stand|switch to|switch|back to|back|on|in|the)\s+/;
     for (let i = 0; i < 6 && HEAD.test(s); i++) s = s.replace(HEAD, '');
-    const TAIL = /(?:了|的|个|吧|呀|啊|呗|啦|哈|哦|喔|嘛|去|来|一下|一下下|一点|一点儿|点点|那儿|那里|这儿|这里|那边|这边|边上|里头|里|走|跑|挪|移|站|待|靠)$/;
+    const TAIL = /(\s+(please|now|over|a bit|a little|okay|ok|the))$/;
     for (let i = 0; i < 6 && TAIL.test(s); i++) s = s.replace(TAIL, '');
-    s = s.replace(/[的个]/g, '');
-    if (!s || s.length > 8) return null;
-    if (!/^[左右上下中间央顶底边角方面侧偏落]+$/.test(s)) return null; // 只剩方位字才算数
-    const hint = (s.match(/偏([左右上下])/) || [])[1] || '';
-    const hasL = /左/.test(s) || hint === '左';
-    const hasR = /右/.test(s) || hint === '右';
-    const hasT = /[上顶]/.test(s) || hint === '上';
-    const hasB = /[下底]/.test(s) || hint === '下';
-    const hasM = /[中央]/.test(s);
-    if (hasL && hasR) return null; // "左右"这种含糊说法不做
+    s = s.trim();
+    if (!s || s.length > 20) return null;
+    const hasL = /\b(left|left side|to the left)\b/.test(s);
+    const hasR = /\b(right|right side|to the right)\b/.test(s);
+    const hasT = /\b(top|up|upper|above)\b/.test(s);
+    const hasB = /\b(bottom|down|lower|below)\b/.test(s);
+    const hasM = /\b(center|centre|middle|mid)\b/.test(s);
+    if (hasL && hasR) return null;
     if (!hasL && !hasR && !hasT && !hasB && !hasM) return null;
     if (hasM && !hasL && !hasR && !hasT && !hasB) return { place: 'center' };
     const horiz = hasL ? 'left' : hasR ? 'right' : hasM ? 'midx' : '';
@@ -2797,35 +2789,35 @@ class PetSprite {
   /** 真正走过去：位移交给她本来就有的行走驱动（跟动画同步、逐帧移窗口）。 */
   async execMove(mv) {
     const NAMES = {
-      left: '左边',
-      right: '右边',
-      top: '上面',
-      bottom: '下面',
-      'top-left': '左上角',
-      'top-right': '右上角',
-      'bottom-left': '左下角',
-      'bottom-right': '右下角',
-      center: '屏幕中间',
-      midx: '中间',
-      'top-midx': '上面中间',
-      'bottom-midx': '下面中间',
-      cursor: '你那边',
-      home: '原来的位置',
+      left: 'left side',
+      right: 'right side',
+      top: 'top',
+      bottom: 'bottom',
+      'top-left': 'top-left corner',
+      'top-right': 'top-right corner',
+      'bottom-left': 'bottom-left corner',
+      'bottom-right': 'bottom-right corner',
+      center: 'center of the screen',
+      midx: 'center',
+      'top-midx': 'top-center',
+      'bottom-midx': 'bottom-center',
+      cursor: 'your side',
+      home: 'the original spot',
     };
-    const what = NAMES[mv.place] || '那边';
+    const what = NAMES[mv.place] || 'that side';
     if (mv.place === 'home') {
       this.walkPlan = null;
       this.goHome();
       this.moveHoldUntil = Date.now() + MOVE_HOLD_MS;
-      return { ok: true, what: what, reply: '好，我回老地方待着啦～' };
+      return { ok: true, what: what, reply: 'OK, I\'ll go back to my old spot~' };
     }
     const r = this.walkTo(mv.place);
-    if (r === false) return { ok: false, why: 'no-move-anim', what: what, reply: '我这套素材里没有能走的动作，挪不过去…' };
-    if (r === 'busy') return { ok: false, why: 'dragging', what: what, reply: '你正揪着我呢，松手我就过去～' };
+    if (r === false) return { ok: false, why: 'no-move-anim', what: what, reply: 'This asset set has no walkable action, I can\'t move there...' };
+    if (r === 'busy') return { ok: false, why: 'dragging', what: what, reply: 'You\'re holding me — let go and I\'ll go over~' };
     // 指路之后先别自己溜达（否则"到了又自己走开"＝像没听话）
     this.moveHoldUntil = Date.now() + MOVE_HOLD_MS;
-    if (r === 'here') return { ok: true, what: what, reply: '我已经在' + what + '啦～' };
-    return { ok: true, what: what, reply: '好，我这就' + (mv.place === 'cursor' ? '过去' : '挪到') + what + '～' };
+    if (r === 'here') return { ok: true, what: what, reply: 'I\'m already ' + what + '~' };
+    return { ok: true, what: what, reply: 'OK, I\'ll ' + (mv.place === 'cursor' ? 'go ' : 'move to ') + what + '~' };
   }
 
   /* ===== [local patch voice-targets@1] 口语归一 + 目标分类 =====
@@ -2837,10 +2829,8 @@ class PetSprite {
     const raw = String(s == null ? '' : s).trim();
     const tg = this.petTargets();
     const cut = (x) => (tg && typeof tg.cleanTrailing === 'function' ? tg.cleanTrailing(x) : String(x || '').trim());
-    let t = cut(raw).replace(/^(?:请|麻烦|劳驾)(?:你|您)?\s*/, '');
+    let t = cut(raw).replace(/^(?:please |help me |could you |would you |can you )+/i, '');
     if (!t) return raw;
-    const m = t.match(/^(?:帮我|给我|替我)?\s*把\s*["'「]?(.+?)["'」]?\s*(?:打开|启动|运行|开一下|开开)$/);
-    if (m) return '打开' + m[1];
     return t;
   }
 
@@ -2859,12 +2849,12 @@ class PetSprite {
   parseSearchIntent(text) {
     const t = String(text || '').trim();
     if (!t || t.length > 60) return null;
-    const m = t.match(/^(?:帮我|给我|替我|麻烦|请)?\s*(百度一下|百度|搜索一下|搜索|搜一下|搜|查一下|查查)\s*[「"']?(.+?)[」"']?$/);
+    const m = t.match(/^(?:please |help me |could you )?\s*(search for|search|look up|look for|google|bing|find)\s+["']?(.+?)["']?[.!]?$/i);
     if (!m) return null;
     const tg = this.petTargets();
     const q = tg && typeof tg.cleanTrailing === 'function' ? tg.cleanTrailing(m[2]).trim() : m[2].trim();
     if (!q) return null;
-    const baidu = m[1].indexOf('百度') === 0;
+    const baidu = /baidu/i.test(m[1]);
     const url = tg && typeof tg.searchUrl === 'function'
       ? tg.searchUrl(q, baidu)
       : (baidu ? 'https://www.baidu.com/s?wd=' : 'https://www.bing.com/search?q=') + encodeURIComponent(q);
@@ -2873,9 +2863,9 @@ class PetSprite {
 
   // 解析"让她做什么"：只认「打开…」这一类意图；其它一律返回 null（= 不拦截，交给正常对话）
   parseIntent(text) {
-    const t = this.normOpenText(text); // [local patch voice-targets@1] 先归一，正则本身一个字不动
+    const t = this.normOpenText(text);
     if (!t || t.length > 60) return null;
-    const m = t.match(/^(?:帮我|给我|替我|麻烦)?\s*(?:打开|启动|运行|开一下|开个|开启)\s*[「"'']?([^」"'']+?)[」"'']?$/);
+    const m = t.match(/^(?:please |help me |could you |would you )?\s*(?:open|launch|run|start|play)\s+["']?([^"'.,!?]+?)["']?[.!]?$/i);
     return m ? { what: m[1].trim() } : null;
   }
 
@@ -2887,18 +2877,18 @@ class PetSprite {
       // 起录＝让她去开软件，要「允许她打开软件」的权限；**停止不需要权限**——
       // 录着的时候拒绝"停止"只会让录像一直录下去，那是更坏的结果。
       if (rec.action === 'start' && !this.perm.app) {
-        this.noteAction('被拒绝（未授权"允许她打开软件"）：开始录屏');
-        return { ok: true, reply: '录屏要先开「允许她打开软件」的权限～右键我 → 权限设置 里勾一下就行。', ts: Date.now() };
+        this.noteAction('Refused (not authorized "allow her to open apps"): start recording');
+        return { ok: true, reply: 'Recording needs the "allow her to open apps" permission~ right-click me → Permissions and tick it.', ts: Date.now() };
       }
       const rr = await this.execRec(rec.action);
-      this.noteAction((rr.ok ? '成功：' : '失败：') + (rec.action === 'start' ? '开始录屏' : '停止录屏') + (rr.ok ? '' : '（' + rr.why + '）'));
+      this.noteAction((rr.ok ? 'Success:' : 'Failed:') + (rec.action === 'start' ? 'Start recording' : 'Stop recording') + (rr.ok ? '' : '(' + rr.why + ')'));
       return { ok: true, reply: rr.reply, ts: Date.now() };
     }
     // [local patch M2] 指路：得抢在 parseIntent 之前（那条正则根本不认「移动到左边」）
     const mv = this.parseMoveIntent(text);
     if (mv) {
       const mr = await this.execMove(mv);
-      this.noteAction((mr.ok ? '成功：' : '失败：') + '走到' + (mr.what || mv.place) + (mr.ok ? '' : '（' + mr.why + '）'));
+      this.noteAction((mr.ok ? 'Success:' : 'Failed:') + 'go to' + (mr.what || mv.place) + (mr.ok ? '' : '(' + mr.why + ')'));
       return { ok: true, reply: mr.reply, ts: Date.now() };
     }
     // [local patch voice-targets@1] 搜索意图（「搜一下X」「百度一下X」）：与「打开网页」同一道权限
@@ -2906,12 +2896,12 @@ class PetSprite {
     if (se) {
       if (!this.perm.url) {
         const lb = this.permLabels().url;
-        this.noteAction('被拒绝（未授权' + lb + '）：搜索 ' + se.q);
-        return { ok: true, reply: '这件事要「' + lb + '」的权限，我还没有～右键我 → 权限设置 里开一下就行。', ts: Date.now() };
+        this.noteAction('Refused (not authorized "' + lb + '"): search ' + se.q);
+        return { ok: true, reply: 'This needs the "' + lb + '" permission, which I don\'t have yet~ right-click me → Permissions to turn it on.', ts: Date.now() };
       }
       const sr = await this.execOpen(se.url, 'url', { kind: 'url', value: se.url, label: se.q });
-      this.noteAction((sr.ok ? '成功：' : '失败：') + '搜索「' + se.q + '」' + (sr.ok ? '' : '（' + sr.why + '）'));
-      return { ok: true, reply: sr.ok ? '好，帮你在' + (se.baidu ? '百度' : '必应') + '上搜「' + se.q + '」～' : sr.reply, ts: Date.now() };
+      this.noteAction((sr.ok ? 'Success:' : 'Failed:') + 'Search "' + se.q + '"' + (sr.ok ? '' : '(' + sr.why + ')'));
+      return { ok: true, reply: sr.ok ? 'OK, searching on ' + (se.baidu ? 'Baidu' : 'Bing') + ' for "' + se.q + '"~' : sr.reply, ts: Date.now() };
     }
     const intent = this.parseIntent(text);
     if (!intent) return null; // 普通聊天，不插手
@@ -2927,11 +2917,11 @@ class PetSprite {
     const what = cls && cls.value ? cls.value : target;
     if (!this.perm[kind]) {
       const label = this.permLabels()[kind];
-      this.noteAction('被拒绝（未授权' + label + '）：' + target);
-      return { ok: true, reply: '这件事要「' + label + '」的权限，我还没有～右键我 → 权限设置 里开一下就行。', ts: Date.now() };
+      this.noteAction('Refused (not authorized "' + label + '): ' + target);
+      return { ok: true, reply: 'This needs the "' + label + '" permission, which I don\'t have yet~ right-click me → Permissions to turn it on.', ts: Date.now() };
     }
     const r = await this.execOpen(what, kind, cls);
-    this.noteAction((r.ok ? '成功：' : '失败：') + target + (r.ok ? '' : '（' + r.why + '）'));
+    this.noteAction((r.ok ? 'Success:' : 'Failed:') + target + (r.ok ? '' : '(' + r.why + ')'));
     return { ok: true, reply: r.reply, ts: Date.now() };
   }
 
@@ -2943,45 +2933,45 @@ class PetSprite {
 
   async execOpen(target, kind) {
     if (typeof this.openTarget !== 'function') {
-      return { ok: false, why: 'bridge-missing', reply: '我这边没有操作通道，做不了…' };
+      return { ok: false, why: 'bridge-missing', reply: 'I have no operation channel, so I can\'t... ' };
     }
     if (kind === 'url') {
       const url = /^https?:\/\//i.test(target) ? target : 'https://' + target;
       const r = await this.openTarget({ kind: 'url', target: url });
-      return r && r.ok ? { ok: true, reply: '好，帮你把 ' + url + ' 打开了～' } : { ok: false, why: (r && r.error) || 'open-failed', reply: '网页没打开成功…' };
+      return r && r.ok ? { ok: true, reply: 'OK, opened ' + url + ' for you~' } : { ok: false, why: (r && r.error) || 'open-failed', reply: 'The page didn\'t open...' };
     }
     // [local patch voice-targets@1] 本机文件夹 / 文件：目标可能是系统文件夹令牌（downloads…）、
     // 盘符、绝对路径，或一个相对名字（主进程会在「桌面/下载/文档/图片/视频/音乐」**顶层**按名字找，
     // 只列一层、只读）。命中多个一律只问不做 —— 与软件那条路同一条安全口径。
     if (kind === 'file') {
       const fr = await this.openTarget({ kind: 'file', target: target });
-      if (fr && fr.ok) return { ok: true, reply: '好，帮你打开「' + (fr.matched || target) + '」了～' };
+      if (fr && fr.ok) return { ok: true, reply: 'OK, opened "' + (fr.matched || target) + '" for you~' };
       if (fr && fr.error === 'ambiguous') {
         const all = (fr.candidates || []).filter((x) => typeof x === 'string' && x);
-        const shown = all.slice(0, 4).join('、') + (all.length > 4 ? ' 等' : '');
-        return { ok: false, why: 'ambiguous', reply: '你说的是哪一个？' + (shown || '我一时想不起来都有谁') + '——说全名我就去开，我不猜。' };
+        const shown = all.slice(0, 4).join(', ') + (all.length > 4 ? ' ... wait' : '');
+        return { ok: false, why: 'ambiguous', reply: 'Which one do you mean?' + (shown || 'I can\'t recall who\'s there right now') + '— say the full name and I\'ll open it; I don\'t guess.' };
       }
-      if (fr && fr.error === 'not-found') return { ok: true, reply: '我没找到叫「' + target + '」的文件夹或文件…' };
-      return { ok: false, why: (fr && fr.error) || 'open-failed', reply: '没打开成功…（' + ((fr && fr.error) || '未知原因') + '）' };
+      if (fr && fr.error === 'not-found') return { ok: true, reply: 'I can\'t find a folder or file called "' + target + '"...' };
+      return { ok: false, why: (fr && fr.error) || 'open-failed', reply: 'Didn\'t open... (' + ((fr && fr.error) || 'unknown reason') + ')' };
     }
     const r = await this.openTarget({ kind: 'auto', target });
-    if (r && r.ok) return { ok: true, reply: '好，帮你打开「' + r.matched + '」了～' };
+    if (r && r.ok) return { ok: true, reply: 'OK, opened "' + r.matched + '" for you~' };
     if (r && r.error === 'ambiguous') {
       /* [local patch P] 同类有多个（或者名字里带"卸载"）：只问、不做 —— 一个都不打开。
        * 语音容易听错一个字，猜错就是替主人卸载/删东西，宁可多问一句。 */
       const all = (r.candidates || []).filter((x) => typeof x === 'string' && x);
-      const shown = all.slice(0, 4).join('、') + (all.length > 4 ? ' 等' : '');
+      const shown = all.slice(0, 4).join(', ') + (all.length > 4 ? ' ... wait' : '');
       return {
         ok: false,
         why: 'ambiguous',
-        reply: '你说的是哪一个？' + (shown || '我一时想不起来都有谁') + '——说全名我就去开，我不猜。',
+        reply: 'Which one do you mean?' + (shown || 'I can\'t recall who\'s there right now') + '— say the full name and I\'ll open it; I don\'t guess.',
       };
     }
     if (r && r.error === 'not-found') {
-      const hint = r.candidates && r.candidates.length ? '（我认识的类似名字：' + r.candidates.join('、') + '）' : '';
-      return { ok: true, reply: '我没找到叫「' + target + '」的软件或文件…' + hint };
+      const hint = r.candidates && r.candidates.length ? '(similar names I know:' + r.candidates.join(', ') + ')' : '';
+      return { ok: true, reply: 'I can\'t find a folder or file called "' + target + '" app or file...' + hint };
     }
-    return { ok: false, why: (r && r.error) || 'open-failed', reply: '没打开成功…（' + ((r && r.error) || '未知原因') + '）' };
+    return { ok: false, why: (r && r.error) || 'open-failed', reply: 'Didn\'t open... (' + ((r && r.error) || 'unknown reason') + ')' };
   }
 
   runPermAction(cmd) {
@@ -2994,21 +2984,21 @@ class PetSprite {
     if (cmd === 'rec-start' || cmd === 'rec-stop') {
       const action = cmd === 'rec-start' ? 'start' : 'stop';
       void this.execRec(action).then((r) => {
-        this.noteAction((r.ok ? '成功：' : '失败：') + (action === 'start' ? '开始录屏（菜单）' : '停止录屏（菜单）') + (r.ok ? '' : '（' + r.why + '）'));
+        this.noteAction((r.ok ? 'Success:' : 'Failed:') + (action === 'start' ? 'Start recording (menu)' : 'Stop recording (menu)') + (r.ok ? '' : '(' + r.why + ')'));
         this.showWhisper(r.reply);
       });
       return;
     }
     if (cmd === 'log') {
       const last = this.permLog.slice(0, 5).map((x) => new Date(x.t).toTimeString().slice(0, 5) + ' ' + x.text);
-      this.showWhisper(last.length ? '我最近做的：' + last.join('；') : '我还没替主人做过什么。');
+      this.showWhisper(last.length ? 'Things I\'ve done recently:' + last.join('; ') : 'I haven\'t done anything for master yet.');
       return;
     }
     // [local patch M2] 菜单里点「走到…」＝主人亲手点的，不走权限闸门
     if (String(cmd || '').indexOf('move:') === 0) {
       const place = String(cmd).slice(5);
       void this.execMove({ place: place }).then((r) => {
-        this.noteAction((r.ok ? '成功：' : '失败：') + '走到' + (r.what || place) + (r.ok ? '' : '（' + r.why + '）'));
+        this.noteAction((r.ok ? 'Success:' : 'Failed:') + 'go to' + (r.what || place) + (r.ok ? '' : '(' + r.why + ')'));
         this.showWhisper(r.reply);
       });
       return;
@@ -3056,11 +3046,11 @@ class PetSprite {
   fixNames(text) {
     if (typeof text !== 'string' || !text) return text;
     const alias = {
-      '左死的2': '求生之路2', '左死2': '求生之路2', '左边的2': '求生之路2', '致死2': '求生之路2',
-      'left 4 dead 2': '求生之路2', 'left for dead 2': '求生之路2', l4d2: '求生之路2', 'left 4 dead': '求生之路',
-      csgo: '反恐精英：全球攻势', 'cs:go': '反恐精英：全球攻势', 'cs 2': '反恐精英2',
-      lol: '英雄联盟', dota2: '刀塔2', 'gta 5': '侠盗猎车手5', gta5: '侠盗猎车手5',
-      pubg: '绝地求生',
+      'Left 4 Dead 2': 'Left 4 Dead 2', 'Left 4 Dead 2': 'Left 4 Dead 2', 'Left 4 Dead 2': 'Left 4 Dead 2', 'Left 4 Dead 2': 'Left 4 Dead 2',
+      'left 4 dead 2': 'Left 4 Dead 2', 'left for dead 2': 'Left 4 Dead 2', l4d2: 'Left 4 Dead 2', 'left 4 dead': 'Left 4 Dead',
+      csgo: 'Counter-Strike: Global Offensive', 'cs:go': 'Counter-Strike: Global Offensive', 'cs 2': 'Counter-Strike 2',
+      lol: 'League of Legends', dota2: 'Dota 2', 'gta 5': 'Grand Theft Auto V', gta5: 'Grand Theft Auto V',
+      pubg: 'PUBG',
     };
     // 直接做大小写不敏感的整体替换，**不构造正则**（从字符串拼正则的转义太容易写错，踩过）
     let out = String(text);
@@ -3123,7 +3113,7 @@ class PetSprite {
   }
 
   hookVoiceMode() {
-    this.voiceState = { on: false, sens: 'mid', micId: '', micLabel: '', lang: 'zh', mics: [], testing: false, quietCount: 0, quietHinted: false, weakCount: 0, weakHinted: false, weakPeak: 0, noSpeechCount: 0, noSpeechHinted: false };
+    this.voiceState = { on: false, sens: 'mid', micId: '', micLabel: '', lang: 'en', mics: [], testing: false, quietCount: 0, quietHinted: false, weakCount: 0, weakHinted: false, weakPeak: 0, noSpeechCount: 0, noSpeechHinted: false };
     let legacyDefault = false; // 盘上存着 'default'（v5 的坑）→ 归一化后顺手清盘
     try {
       const raw = window.localStorage.getItem(this.voiceKey());
@@ -3143,7 +3133,7 @@ class PetSprite {
           }
         }
         // 识别语言也只认这两个值（默认 zh = 一直以来的行为），别的当没写
-        if (o && (o.lang === 'zh' || o.lang === 'auto')) this.voiceState.lang = o.lang;
+        if (o && (o.lang === 'en' || o.lang === 'zh' || o.lang === 'auto')) this.voiceState.lang = o.lang;
         // [local patch Z] 语音模式持久化：老代码 on 从不落盘，重启即静音
         if (o && typeof o.on === 'boolean') this.voiceState.on = o.on;
       }
@@ -3159,7 +3149,7 @@ class PetSprite {
       const st = this.voiceState || {};
       window.localStorage.setItem(
         this.voiceKey(),
-        JSON.stringify({ on: !!st.on, sens: st.sens, micId: st.micId || '', micLabel: st.micLabel || '', lang: st.lang === 'auto' ? 'auto' : 'zh' }),
+        JSON.stringify({ on: !!st.on, sens: st.sens, micId: st.micId || '', micLabel: st.micLabel || '', lang: st.lang === 'auto' ? 'auto' : 'en' }),
       );
     } catch {
       /* 同上 */
@@ -3169,23 +3159,23 @@ class PetSprite {
   voiceLabels() {
     const st = this.voiceState || {};
     const sens = st.sens || 'mid';
-    const text = { low: '低（要大声点）', mid: '中', high: '高（小声也听得见）' }[sens] || '中';
+    const text = { low: 'Low (speak louder)', mid: 'Medium', high: 'High (hears quiet voices)' }[sens] || 'Medium';
     const on = !!st.on;
     const mics = Array.isArray(st.mics) ? st.mics : [];
     const sel = st.micId || '';
-    const lang = st.lang === 'auto' ? 'auto' : 'zh';
+    const lang = st.lang === 'auto' ? 'auto' : 'en';
     return {
       on,
       sens,
       sensText: text,
       lang,
-      langText: lang === 'auto' ? '自动' : '中文',
-      hint: on ? '听完停一下，我就接话' : '开着才用麦克风（本机转写）',
+      langText: lang === 'auto' ? 'Auto' : 'English',
+      hint: on ? 'Say it, pause, and I\'ll respond' : 'Only uses the mic when on (local transcription)',
       micId: sel,
       micLabel: st.micLabel || '',
-      micText: sel ? st.micLabel || '已选的设备' : '默认',
+      micText: sel ? st.micLabel || 'Selected device' : 'Default',
       // 一个名字都没枚举到时（还没授权），说清楚为什么看不到名字 —— 别拿 deviceId 冒充设备名
-      micHint: mics.length ? '选中的那个才是我要听的声音' : '先点下面的自检授权一次才能看到设备名',
+      micHint: mics.length ? 'The selected one is the only voice I listen to' : 'Authorize via the self-test below first to see device names',
       mics,
       testing: !!st.testing,
     };
@@ -3206,7 +3196,7 @@ class PetSprite {
       id = '';
     }
     if (!id) id = String((this.voiceState && this.voiceState.micId) || '');
-    return id ? '…' + id.slice(-6) : '默认麦克风';
+    return id ? '…' + id.slice(-6) : 'Default microphone';
   }
 
   /** [local patch V] 把麦克风列表刷进 voiceState.mics（异步，**不弹权限框**：enumerateDevices 不要授权）。
@@ -3263,7 +3253,7 @@ class PetSprite {
       this.startVoiceMode();
       return true;
     }
-    this.showWhisper('好，麦克风用「' + (label || '默认设备') + '」。');
+    this.showWhisper('OK, microphone set to "' + (label || 'default device') + '".');
     return true;
   }
 
@@ -3272,14 +3262,14 @@ class PetSprite {
    *  默认 zh = 沿用现在的行为，auto 只留给"确实想让它自己判语言"的人。
    *  换语言不重启 worker：下一句把新语言带过去，worker 自己把引擎换掉（冷启 ~2.5s，只一次）。 */
   setVoiceLang(lang) {
-    const want = lang === 'auto' ? 'auto' : 'zh';
+    const want = lang === 'auto' ? 'auto' : 'en';
     const st = this.voiceState;
     if (!st) return false;
     const changed = st.lang !== want;
     st.lang = want;
     this.saveVoice();
     if (!changed) return true;
-    this.showWhisper('好，识别语言：' + (want === 'auto' ? '自动（噪声多的时候会猜成韩文/日文）' : '中文') + '（下一句生效）');
+    this.showWhisper('OK, recognition language:' + (want === 'auto' ? 'Auto (may guess Korean/Japanese on noise)' : 'English') + '(takes effect next sentence)');
     return true;
   }
 
@@ -3372,12 +3362,12 @@ class PetSprite {
     if (this.voiceState && this.voiceState.on) return true; // 幂等：开着再点不会重复开麦
     const bridge = window.petBridge;
     if (!bridge || typeof bridge.setVoiceMode !== 'function' || typeof bridge.voiceTranscribe !== 'function') {
-      this.showWhisper('我这边的语音通道没加载，用不了语音模式…');
+      this.showWhisper('My voice channel isn\'t loaded, so voice mode won\'t work...');
       return false;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-      this.showWhisper('这个窗口不支持录音，语音模式开不了…');
+      this.showWhisper('This window doesn\'t support recording, so voice mode can\'t turn on...');
       return false;
     }
     // 先告诉主进程「语音模式开着」，主进程才会放行 media 权限（默认一律拒绝）
@@ -3387,7 +3377,7 @@ class PetSprite {
       got = await this.voiceOpenMic(); // 用选中的设备；它不在了就回落默认（下面如实说一句）
     } catch (e) {
       await bridge.setVoiceMode(false);
-      this.showWhisper('麦克风没有权限，我开不了语音模式…（在系统设置里允许麦克风再试）');
+      this.showWhisper('No mic permission, so I can\'t turn on voice mode... (allow the microphone in system settings and try again)');
       return false;
     }
     const stream = got.stream;
@@ -3445,9 +3435,9 @@ class PetSprite {
       // 每 10 秒看一眼：开着麦却一点人声都没进来，就得让主人知道（并且记进日志）
       st.timer = setInterval(() => this.voiceSilenceTick(st), 10000);
       if (got.fellBack) {
-        this.showWhisper('选中的麦克风「' + (this.voiceState.micLabel || '之前选的那个') + '」没找到（可能被拔了），我用了默认设备。');
+        this.showWhisper('The selected microphone "' + (this.voiceState.micLabel || 'the one picked before') + '" wasn\'t found (maybe unplugged); I\'m using the default device.');
       } else {
-        this.showWhisper('语音模式开着啦～说完停一下，我听到会先复述一遍。');
+        this.showWhisper('Voice mode is on~ speak, pause, and I\'ll echo back what I hear.');
       }
       return true;
     } catch (e) {
@@ -3457,7 +3447,7 @@ class PetSprite {
         /* 已经停了 */
       }
       await bridge.setVoiceMode(false);
-      this.showWhisper('麦克风起来了但音频管线没建起来…（' + String((e && e.message) || e) + '）');
+      this.showWhisper('The mic came up but the audio pipeline didn\'t... (' + String((e && e.message) || e) + ')');
       return false;
     }
   }
@@ -3498,23 +3488,23 @@ class PetSprite {
     this.voiceState.sens = sens;
     if (this.voice) this.voice.vad = this.voiceVadNew(sens); // 换灵敏度立刻生效（丢掉半句）
     this.saveVoice();
-    this.showWhisper('好，语音灵敏度：' + this.voiceLabels().sensText + '。');
+    this.showWhisper('OK, voice sensitivity:' + this.voiceLabels().sensText + '.');
   }
 
   voiceErrText(r) {
     const why = (r && r.error) || '';
-    if (why === 'no-node-runtime') return '本机语音引擎不可用：没找到 node 运行时…';
-    if (why === 'worker-missing') return '本机语音引擎不可用：worker 脚本不在…';
-    if (why === 'worker-timeout') return '转写超时了，没听出来…';
-    if (why === 'empty-audio') return '没听清…再说一遍嘛。';
-    return '本机语音引擎没转写成功…（' + why + '）';
+    if (why === 'no-node-runtime') return 'Local voice engine unavailable: no node runtime found...';
+    if (why === 'worker-missing') return 'Local voice engine unavailable: the worker script is missing...';
+    if (why === 'worker-timeout') return 'Transcription timed out, didn\'t catch it...';
+    if (why === 'empty-audio') return 'Didn\'t catch that... say it again?';
+    return 'The local voice engine didn\'t transcribe... (' + why + ')';
   }
 
   async voiceHandlePcm(samples, seg) {
     const bridge = window.petBridge;
-    const at = { device: (seg && seg.device) || '默认麦克风', rms: (seg && seg.rms) || 0, voicedMs: (seg && seg.voicedMs) || 0 };
+    const at = { device: (seg && seg.device) || 'Default microphone', rms: (seg && seg.rms) || 0, voicedMs: (seg && seg.voicedMs) || 0 };
     if (!bridge || typeof bridge.voiceTranscribe !== 'function') {
-      this.showWhisper('本机语音引擎不可用，我听不了…');
+      this.showWhisper('Local voice engine unavailable, I can\'t hear...');
       this.voiceNoteSegment({ device: at.device, rms: at.rms, voicedMs: at.voicedMs, dropped: 'no-engine' });
       return null;
     }
@@ -3554,7 +3544,7 @@ class PetSprite {
     }
     const heard = this.fixNames(String(r.text || '').trim());
     if (!heard) {
-      this.showWhisper('没听清…再说一遍嘛。');
+      this.showWhisper('Didn\'t catch that... say it again?');
       this.voiceNoteSegment({ device: at.device, rms: at.rms, voicedMs: at.voicedMs, gain: boosted.gain, speechMs, dropped: 'empty-text' });
       return null;
     }
@@ -3562,12 +3552,12 @@ class PetSprite {
     //    （主人盘上有一条 rms 0.0793 的段落，引擎只回了「。」）。判据是**既没有中日韩文字、
     //    也没有 ASCII 字母数字**；**绝不能用"长度<2"** —— 那会把「好」「嗯」「QQ」一起误杀。
     if (!this.voiceHasWords(heard)) {
-      this.showWhisper('这一句我只听到点杂音…你再说一遍嘛。');
+      this.showWhisper('All I got was noise... say it again?');
       this.voiceNoteSegment({ device: at.device, rms: at.rms, voicedMs: at.voicedMs, gain: boosted.gain, speechMs, heard, dropped: 'garbage' });
       return null;
     }
     this.ttsKind('heard'); // [local patch T] 复述主人自己的话：只出气泡，不朗读
-    this.showWhisper('我听到：「' + heard + '」'); // 先说听到的：听错了主人当场能看出来（**原样**带标点，不做任何裁剪）
+    this.showWhisper('I heard: "' + heard + '"'); // 先说听到的：听错了主人当场能看出来（**原样**带标点，不做任何裁剪）
     let route = null;
     try {
       route = await this.voiceRouteText(heard); // 削标点/拆分句只发生在路由内部：复述给主人的永远是引擎原文
@@ -3595,7 +3585,7 @@ class PetSprite {
     st.noSpeechCount = (st.noSpeechCount || 0) + 1;
     if (st.noSpeechCount < 3 || st.noSpeechHinted) return false;
     st.noSpeechHinted = true;
-    this.showWhisper('我一直没听到人声（连着几段都被本机 VAD 判成噪声了）——靠近点说，或者右键我 → 语音模式 → 麦克风，换个麦克风试试。');
+    this.showWhisper('I haven\'t heard a voice for a while (several clips were all judged as noise by the local VAD) — speak closer, or right-click me → Voice mode → Microphone and pick another mic.');
     return true;
   }
 
@@ -3611,9 +3601,9 @@ class PetSprite {
     st.weakHinted = true;
     const num = String(Number((Number(st.weakPeak) || 0).toFixed(3)));
     this.showWhisper(
-      '你的麦克风信号太轻了（最近几段峰值只有 ' + num + '，我要 ' + min + ' 以上才敢送识别，硬送的话我会瞎猜）——' +
-        '离麦近一点说，或者右键我 → 语音模式：把灵敏度调高一级、或换一个带麦的耳机。' +
-        '我查过了，Windows 里这个麦的音量已经开到 94%，不是系统音量的问题。',
+      'Your mic signal is too weak (recent peaks only ' + num + ', I need ' + min + ' or more before sending to recognition — otherwise I\'d be guessing) —' +
+        'speak closer to the mic, or right-click me → Voice mode: raise the sensitivity one level, or use a headset mic.' +
+        'I checked: this mic\'s volume in Windows is already at 94%, so it\'s not a system-volume issue.',
     );
     return true;
   }
@@ -3627,7 +3617,7 @@ class PetSprite {
     const heard = seg.heard ? String(seg.heard).slice(0, 200) : null;
     const entry = {
       ts: Date.now(),
-      device: String(seg.device || '默认麦克风').slice(0, 40),
+      device: String(seg.device || 'Default microphone').slice(0, 40),
       rms: Number(seg.rms) || 0,
       voicedMs: Math.round(Number(seg.voicedMs) || 0),
       // v6：Silero VAD 判出的"真语音"毫秒数（0 = 一句人声都没有）。没测过就 null —— 不是 0。
@@ -3660,7 +3650,7 @@ class PetSprite {
     st.quietCount = (st.quietCount || 0) + 1;
     if (st.quietCount < 3 || st.quietHinted) return false;
     st.quietHinted = true;
-    this.showWhisper('我一直没听到你的声音……右键我 → 语音模式 → 麦克风，换一个设备试试。');
+    this.showWhisper('I still can\'t hear you...... right-click me → Voice mode → Microphone and try another device.');
     return true;
   }
 
@@ -3702,12 +3692,12 @@ class PetSprite {
     if (!st || st.testing) return { ok: false, reason: 'busy' }; // 自检进行中再点不重复
     const bridge = window.petBridge;
     if (!bridge || typeof bridge.voiceTranscribe !== 'function') {
-      this.showWhisper('我这边的语音通道没加载，自检做不了…');
+      this.showWhisper('My voice channel isn\'t loaded, so the self-test can\'t run...');
       return { ok: false, reason: 'no-bridge' };
     }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-      this.showWhisper('这个窗口不支持录音，自检做不了…');
+      this.showWhisper('This window doesn\'t support recording, so the self-test can\'t run...');
       return { ok: false, reason: 'no-audio' };
     }
     const wasOn = !!st.on;
@@ -3732,8 +3722,8 @@ class PetSprite {
       src = ctx.createMediaStreamSource(stream);
       proc = ctx.createScriptProcessor(4096, 1, 1);
       if (ctx.state === 'suspended' && typeof ctx.resume === 'function') await ctx.resume();
-      if (got.fellBack) this.showWhisper('选中的麦克风没找到（可能被拔了），自检先用默认设备。');
-      this.showWhisper('自检开始：对着麦克风说点什么，3 秒…');
+      if (got.fellBack) this.showWhisper('The selected microphone wasn\'t found (maybe unplugged); the self-test uses the default device.');
+      this.showWhisper('Self-test starting: say something into the mic for 3 seconds...');
       await new Promise((resolve) => {
         let done = false;
         const finish = () => {
@@ -3772,7 +3762,7 @@ class PetSprite {
       // "一点声音都没收到"判的是**信号本身**（几乎为零），不是灵敏度阈值：
       // 阈值是"算不算一句话"的线，不是"麦克风有没有在工作"的线。
       if (!total || peak < 0.002) {
-        this.showWhisper('一点声音都没收到…麦克风「' + tag + '」好像没在工作（右键我 → 语音模式 → 麦克风，换一个试试）。');
+        this.showWhisper('Didn\'t get any sound... microphone "' + tag + '" doesn\'t seem to be working (right-click me → Voice mode → Microphone, try another).');
         this.voiceNoteSegment({ dropped: 'selftest-silent', device: tag, rms: peak, voicedMs: 0 });
         return { ok: false, reason: 'silent' };
       }
@@ -3781,9 +3771,9 @@ class PetSprite {
       const minRms = this.voiceMinRms(st.sens);
       if (peak < minRms) {
         this.showWhisper(
-          '自检收到的声音太轻了（峰值 rms ' + String(Number(peak.toFixed(3))) + '，低于当前灵敏度要的 ' + minRms + '）——' +
-            '我没把它送去识别（硬送我会瞎猜）。录音我留在 voice-selftest.wav 了，你可以自己听听；' +
-            '也可以把灵敏度调高一级，或者换一个带麦的耳机。',
+          'The self-test sound was too weak (peak rms ' + String(Number(peak.toFixed(3))) + ', below the ' + minRms + ' this sensitivity needs) —' +
+            'I didn\'t send it to recognition (I\'d be guessing). The recording is saved as voice-selftest.wav if you want to listen;' +
+            'you can also raise the sensitivity one level, or use a headset mic.',
         );
         this.voiceNoteSegment({ dropped: 'selftest-quiet', device: tag, rms: peak, voicedMs: loud * 256 });
         return { ok: false, reason: 'too-quiet', rms: peak };
@@ -3792,29 +3782,29 @@ class PetSprite {
       const boosted = this.voiceApplyGain(this.voiceConcat(chunks, total), peak);
       let r = null;
       try {
-        r = await bridge.voiceTranscribe(boosted.samples, st.lang === 'auto' ? 'auto' : 'zh');
+        r = await bridge.voiceTranscribe(boosted.samples, st.lang === 'auto' ? 'auto' : 'en');
       } catch (e) {
         r = { ok: false, error: String((e && e.message) || e) };
       }
       if (!r || !r.ok) {
-        this.showWhisper('转写引擎出错了…（' + this.voiceErrText(r) + '）');
+        this.showWhisper('The transcription engine errored... (' + this.voiceErrText(r) + ')');
         this.voiceNoteSegment({ dropped: 'selftest-engine', device: tag, rms: peak, voicedMs: loud * 256, gain: boosted.gain });
         return { ok: false, reason: 'engine' };
       }
       const heard = this.fixNames(String(r.text || '').trim());
       if (!heard) {
-        this.showWhisper('有声音，可是一个字都没认出来…再说一句试试？');
+        this.showWhisper('There\'s sound, but not a single word was recognized... try another sentence?');
         this.voiceNoteSegment({ dropped: 'selftest-empty', device: tag, rms: peak, voicedMs: loud * 256, gain: boosted.gain });
         return { ok: false, reason: 'empty' };
       }
-      this.showWhisper('我听到的是：「' + heard + '」'); // 自检**只复述**：不走意图通道，不打开任何东西
+      this.showWhisper('What I heard: "' + heard + '"'); // 自检**只复述**：不走意图通道，不打开任何东西
       this.voiceNoteSegment({ heard, device: tag, rms: peak, voicedMs: loud * 256, gain: boosted.gain });
       return { ok: true, text: heard };
     } catch (e) {
       this.voiceCloseTest(stream, ctx, proc, src);
       st.testing = false;
       if (!wasOn && typeof bridge.setVoiceMode === 'function') await bridge.setVoiceMode(false);
-      this.showWhisper('麦克风起来了但录音没跑起来…（' + String((e && e.message) || e) + '）');
+      this.showWhisper('The mic came up but recording didn\'t run... (' + String((e && e.message) || e) + ')');
       return { ok: false, reason: 'error' };
     }
   }
@@ -3893,7 +3883,7 @@ class PetSprite {
       if (reply) this.showWhisper(reply);
       return { ok: !!reply, route: 'chat' };
     } catch (e) {
-      this.showWhisper('我听到了，可是没连上说话的那头…');
+      this.showWhisper('I heard you, but couldn\'t reach the speech side...');
       return { ok: false, route: 'chat' };
     } finally {
       this.chatReplyDone(); // [发布版补丁 A8b]
@@ -3907,7 +3897,7 @@ class PetSprite {
     }
     if (cmd === 'off') {
       const was = this.stopVoiceMode();
-      if (was) this.showWhisper('语音模式关啦，麦克风也停了。');
+      if (was) this.showWhisper('Voice mode is off, mic stopped too.');
       return;
     }
     if (cmd === 'sens:low' || cmd === 'sens:mid' || cmd === 'sens:high') {
@@ -3919,7 +3909,7 @@ class PetSprite {
       this.setVoiceMic(cmd.slice(4));
       return;
     }
-    if (cmd === 'lang:zh' || cmd === 'lang:auto') {
+    if (cmd === 'lang:en' || cmd === 'lang:auto') {
       this.setVoiceLang(cmd.slice(5));
       return;
     }
@@ -3940,20 +3930,20 @@ class PetSprite {
   ttsKey() { return 'dsh-pet-tts-main'; }
   ttsDefaults() {
     // autotalk 默认关：自言自语本来就多，一开麦就念会很吵（主人可以自己勾）
-    return { on: true, voice: 'zh-CN-XiaoyiNeural', rate: '+0%', vol: 0.9, chat: true, notice: true, autotalk: false, sing: true };
+    return { on: true, voice: 'en-US-AvaNeural', rate: '+0%', vol: 0.9, chat: true, notice: true, autotalk: false, sing: true };
   }
   ttsVoiceTable() {
     return [
-      { id: 'zh-CN-XiaoyiNeural', label: '晓伊 · 活泼（默认）' },
-      { id: 'zh-CN-XiaoxiaoNeural', label: '晓晓 · 温柔' },
-      { id: 'zh-CN-YunxiNeural', label: '云希 · 男 · 阳光' },
-      { id: 'zh-CN-YunxiaNeural', label: '云夏 · 男 · 可爱' },
-      { id: 'zh-CN-liaoning-XiaobeiNeural', label: '小北 · 东北 · 幽默' },
-      { id: 'zh-CN-shaanxi-XiaoniNeural', label: '小妮 · 陕西' },
+      { id: 'en-US-AvaNeural', label: 'Ava · warm (default)' },
+      { id: 'en-US-JennyNeural', label: 'Jenny · friendly' },
+      { id: 'en-US-AriaNeural', label: 'Aria · bright' },
+      { id: 'en-US-GuyNeural', label: 'Guy · male' },
+      { id: 'en-GB-SoniaNeural', label: 'Sonia · British' },
+      { id: 'en-AU-NatashaNeural', label: 'Natasha · Australian' },
     ];
   }
-  ttsRateTable() { return [{ label: '慢', v: '-15%' }, { label: '正常', v: '+0%' }, { label: '快', v: '+15%' }]; }
-  ttsVolTable() { return [{ label: '小', v: 0.35 }, { label: '中', v: 0.6 }, { label: '大', v: 0.9 }]; }
+  ttsRateTable() { return [{ label: 'Slow', v: '-15%' }, { label: 'Normal', v: '+0%' }, { label: 'Fast', v: '+15%' }]; }
+  ttsVolTable() { return [{ label: 'Small', v: 0.35 }, { label: 'Medium', v: 0.6 }, { label: 'Large', v: 0.9 }]; }
 
   /** 一次会话里的运行状态（token = 世代号：任何"别念了"都 +1，在途结果一律作废）。 */
   ttsEnsure() {
@@ -4023,11 +4013,11 @@ class PetSprite {
     const vt = this.ttsVoiceTable();
     const v = vt.filter((x) => x.id === c.voice)[0] || vt[0];
     const r = this.ttsRateTable().filter((x) => x.v === c.rate)[0] || this.ttsRateTable()[1];
-    const vol = c.vol >= 0.75 ? '大' : c.vol >= 0.45 ? '中' : '小';
+    const vol = c.vol >= 0.75 ? 'Large' : c.vol >= 0.45 ? 'Medium' : 'Small';
     return {
       on: c.on, voice: c.voice, voiceText: v.label, rate: c.rate, rateText: r.label,
       vol: c.vol, volText: vol, chat: c.chat, notice: c.notice, autotalk: c.autotalk, sing: c.sing,
-      hint: c.on ? '· 联网使用，念出的文字会发给微软朗读服务' : '· 现在只出气泡不出声',
+      hint: c.on ? ' · Uses the network; the text is sent to Microsoft\'s speech service' : ' · Bubbles only right now (no sound)',
     };
   }
 
@@ -4095,7 +4085,7 @@ class PetSprite {
 
   /** 回声检测用的归一化：去掉标点与空白，只留字。 */
   ttsNorm(text) {
-    return String(text == null ? '' : text).replace(/[\s，。！？；：、,.!?;:~～"'“”‘’（）()\[\]【】…—-]/g, '');
+    return String(text == null ? '' : text).replace(/[\s，。！？；：、,.!?;:~～"'“”‘’（）()\[\][]…—-]/g, '');
   }
   /** 识别出来的是不是我 8 秒内刚说过的话（扬声器→麦克风的回声）。 */
   ttsIsEcho(text) {
@@ -4138,7 +4128,7 @@ class PetSprite {
       const raw = String(text == null ? '' : text);
       const say = this.fixNames ? this.fixNames(raw) : raw;
       const kind = this.ttsInferKind(raw);
-      try { this.ttsSpeak(say, kind); } catch (e) { console.info('[dsh-pet tts] 入队失败：' + String((e && e.message) || e)); }
+      try { this.ttsSpeak(say, kind); } catch (e) { console.info('[dsh-pet tts] enqueue failed:' + String((e && e.message) || e)); }
       return shown;
     };
   }
@@ -4153,7 +4143,7 @@ class PetSprite {
     const st = this.ttsEnsure();
     const origVad = this.voiceVadPush.bind(this);
     const origRoute = this.voiceRouteText.bind(this);
-    const dev = () => (this.voice && this.voice.device) || '默认麦克风';
+    const dev = () => (this.voice && this.voice.device) || 'Default microphone';
     this.voiceVadPush = (vad, chunk, frameMs) => {
       if (this.ttsSpeakingNow()) {
         st.muteMs = Math.round(st.muteMs + (Number(frameMs) || 0));
@@ -4213,7 +4203,7 @@ class PetSprite {
     const key = c.voice + '|' + c.rate + '|' + text;
     if (st.cache.has(key)) return st.cache.get(key);
     const bridge = window.petBridge;
-    if (!bridge || typeof bridge.ttsSpeak !== 'function') { this.ttsFailNotice('没有可用的朗读通道'); return null; }
+    if (!bridge || typeof bridge.ttsSpeak !== 'function') { this.ttsFailNotice('No usable speech channel'); return null; }
     let r = null;
     try {
       // 字段名以 Lead 裁决为准：成功是 {ok:true, mp3:<Buffer>}（preload 已把 Buffer 转成精确字节的 Uint8Array）
@@ -4230,7 +4220,7 @@ class PetSprite {
       if (m instanceof ArrayBuffer) audio = m.slice(0);
       else if (m && m.buffer) audio = m.buffer.slice(m.byteOffset, m.byteOffset + m.byteLength); // byteOffset 必须算进去
     }
-    if (!audio || audio.byteLength < 512) { this.ttsFailNotice((r && r.error) || '朗读服务没有返回音频'); return null; }
+    if (!audio || audio.byteLength < 512) { this.ttsFailNotice((r && r.error) || 'The speech service returned no audio'); return null; }
     st.cache.set(key, audio);
     while (st.cache.size > 24) st.cache.delete(st.cache.keys().next().value);
     return audio;
@@ -4243,7 +4233,7 @@ class PetSprite {
       return st.ctx;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) { this.ttsFailNotice('这个窗口不支持音频播放'); return null; }
+    if (!AC) { this.ttsFailNotice('This window does not support audio playback'); return null; }
     try { st.ctx = new AC(); } catch (e) { this.ttsFailNotice('audio-context: ' + String((e && e.message) || e)); return null; }
     return st.ctx;
   }
@@ -4365,9 +4355,9 @@ class PetSprite {
   /** 试听一句：不进气泡（菜单里点"试听"不该弹一句碎碎念）。 */
   ttsPreview() {
     const st = this.ttsEnsure();
-    st.queue.push('我是鲸鱼娘，现在这样说话，可以吗？');
+    st.queue.push('I\'m Whale Girl speaking like this now — is that okay?');
     st.lastKind = 'preview';
-    st.diagStarted = false; st.diagBytes = 0; st.diagT0 = Date.now(); st.diagText = '我是鲸鱼娘，现在这样说话，可以吗？'; st.diagVoice = this.ttsConfig().voice; st.diagErrWritten = false;
+    st.diagStarted = false; st.diagBytes = 0; st.diagT0 = Date.now(); st.diagText = 'I\'m Whale Girl speaking like this now — is that okay?'; st.diagVoice = this.ttsConfig().voice; st.diagErrWritten = false;
     st.token++;
     const token = st.token;
     void this.ttsPump(st, token);
@@ -4379,7 +4369,7 @@ class PetSprite {
     const c = this.ttsConfig();
     const st = this.ttsEnsure();
     const msg = String((err && err.message) || err || 'unknown');
-    console.info('[dsh-pet tts] 朗读不可用：' + msg);
+    console.info('[dsh-pet tts] speech unavailable:' + msg);
     // 诊断：失败路径落进同一个键的 lastError（一次发言只记一次，绝不刷屏；写失败的 try/catch 在里面）
     if (!st.diagErrWritten) {
       st.diagErrWritten = true;
@@ -4388,7 +4378,7 @@ class PetSprite {
     if (c.fail || st.suppress) return false;
     c.fail = true;
     st.suppress++;
-    try { this.showWhisper('我这边连不上朗读服务，先用文字回你。'); } finally { st.suppress--; }
+    try { this.showWhisper('I can\'t reach the speech service; I\'ll reply in text for now.'); } finally { st.suppress--; }
     return true;
   }
 
@@ -4399,11 +4389,11 @@ class PetSprite {
           this.ttsKind('autotalk'); // [local patch T] 自言自语（默认不念）
           this.showWhisper(state.text, state.image);
         } else {
-          console.warn('[dsh-pet] 菜单碎碎念失败 reason=' + state.reason + (state.message ? ' ' + state.message : ''));
+          console.warn('[dsh-pet] menu chatter failed reason=' + state.reason + (state.message ? ' ' + state.message : ''));
         }
       })
       .catch((e) => {
-        console.warn('[dsh-pet] 菜单碎碎念异常', e);
+        console.warn('[dsh-pet] menu chatter error', e);
       });
   }
 
@@ -4426,19 +4416,19 @@ class PetSprite {
   runSingAction(cmd) {
     if (cmd === 'stop') {
       this.stopSinging();
-      this.showWhisper('好，我不唱了～');
+      this.showWhisper('OK, I\'ll stop singing~');
       return;
     }
     if (!cmd || cmd === 'noop') return; // 菜单里的信息行：只显示文字，点了不做事
     if (cmd === 'info') {
-      this.showWhisper('让我看看你在听什么…');
+      this.showWhisper('Let me see what you\'re listening to…');
       void this.fetchNowPlaying().then((np) => {
         this.showWhisper(
           np && np.ok
-            ? (np.track || np.title) + (np.artist ? ' - ' + np.artist : '') + '（' + np.app + '）'
+            ? (np.track || np.title) + (np.artist ? ' - ' + np.artist : '') + '(' + np.app + ')'
             : np && np.error === 'window-enum-failed'
-              ? '我读不到窗口列表，看不到你在放什么…'
-              : '没找到正在放歌的音乐软件，先打开一个再叫我～',
+              ? 'I can\'t read the window list, so I can\'t see what\'s playing…'
+              : 'No music app is playing right now — open one and call me again~',
         );
       });
       return;
@@ -4450,11 +4440,11 @@ class PetSprite {
       this.showWhisper(
         theme
           ? loop
-            ? '好，我一边听一边自己编词唱～（' + theme + '）'
-            : '好，我自己编词唱一首～（' + theme + '）'
+            ? 'OK, I\'ll listen and make up my own lyrics~ (' + theme + ')'
+            : 'OK, I\'ll make up a song and sing it~ (' + theme + ')'
           : np && np.error === 'window-enum-failed'
-            ? '我读不到窗口列表，那我自己编一首唱～'
-            : '没找到在放歌的软件，那我随便编一首唱～',
+            ? 'I can\'t read the window list, so I\'ll make one up~'
+            : 'No music app found, so I\'ll just make one up~',
       );
       this.startImprovisedSinging(theme, loop);
     });
@@ -4482,30 +4472,30 @@ class PetSprite {
   // rateMs = 这一组唱完一句停多久；rate = TTS 语速增量（百分点）；vol = 音量倍数。
   singEmotions() {
     return [
-      { key: 'lazy', name: '慵懒', tone: '慢悠悠、软软的', hints: ['哈欠', '打瞌睡', '沉眠', '小憩', '伸懒腰', '摇扇纳凉', '悠闲哼歌', '安静'],
+      { key: 'lazy', name: 'Drowsy', tone: 'slow and soft', hints: ['Yawning', 'Dozing off', 'Fast asleep', 'Napping', 'Stretching', 'Folding fan', 'Humming along', 'Quiet'],
         rateMs: 5400, rate: -12, vol: 0.82,
-        theme: ['{song}呀…听着就想睡了～', '趴着听{song}，尾巴都不想动', '困…{song}里是不是有张床', '{song}好慢呀…正合我意～'],
-        plain: ['困得尾巴都不想甩了…', '再让我眯一小会儿嘛～', '懒洋洋地哼，也算唱歌', '眼睛睁不开了…但还要哼完'] },
-      { key: 'pouty', name: '气鼓鼓', tone: '带点小脾气的', hints: ['气急败坏', '生气', '不耐烦', '拍打地面', '被吓一跳', '惊醒'],
+        theme: ['{song}, huh... just hearing it makes me sleepy~', 'Lying down listening to {song}; my tail won\'t even move', 'So sleepy... is there a bed in {song}?', '{song} is so slow... just my speed~'],
+        plain: ['Too sleepy to even swish my tail…', 'Just let me doze a little longer~', 'Humming lazily still counts as singing', 'My eyes won\'t open... but I\'ll finish the song'] },
+      { key: 'pouty', name: 'Pouty', tone: 'a little moody', hints: ['Fuming', 'Angry', 'Impatient', 'Slapping the ground', 'Startled', 'Jolted awake'],
         rateMs: 3200, rate: 6, vol: 1,
-        theme: ['{song}都不理我，我生气了！', '哼，{song}也偏着主人说话', '再听{song}我就不唱了…哼', '{song}吵到我了，哼！'],
-        plain: ['哼！刚才那一下我很在意', '我嘴上说不气，尾巴在拍桌子', '不理你了…才怪，再听一句', '哼，这次算你运气好'] },
-      { key: 'proud', name: '得意', tone: '得意、要人夸的', hints: ['女仆屈膝', '旋转展示', '换装试色', '照镜子', '魔术', '变鸽子', '三球抛接', '蓝鲸现世', '写福字', '收红包', '舞狮头'],
+        theme: ['{song} won\'t even listen to me — I\'m mad!', 'Hmph, {song} sides with master too', 'If I hear {song} again I\'ll stop singing... hmph', '{song} is too noisy for me, hmph!'],
+        plain: ['Hmph! That part really got to me', 'I say I\'m not mad, but my tail is slapping the table', 'I\'m ignoring you... not really, one more line', 'Hmph, you got lucky this time'] },
+      { key: 'proud', name: 'Proud', tone: 'proud, fishing for praise', hints: ['Maid curtsey', 'Spin showcase', 'Outfit try-on', 'Mirror', 'Magic', 'Dove trick', 'Juggling', 'Blue whale appears', 'Writing a lucky charm', 'Red envelope', 'Lion dance'],
         rateMs: 4200, rate: 2, vol: 1,
-        theme: ['{song}也没我唱得好听～', '主人看，{song}我都会哼了', '这首{song}，我唱得最有腔调', '{song}？我闭着眼都能唱～'],
-        plain: ['怎么样，我唱得还不错吧～', '哼，我聪明着呢，只是懒', '再夸我一句，我就唱大声点', '听好了，这一段是我加的'] },
-      { key: 'curious', name: '好奇', tone: '好奇、像在发问的', hints: ['魔方', '玩具汽车', '五子棋', '写代码', '轻快记录', '吐泡泡', '拆礼物', '试色', '看书', '看'],
+        theme: ['{song} doesn\'t sound as good as me~', 'Master, look — I can hum {song} now', 'I sing this {song} with the most style', '{song}? I can sing it with my eyes closed~'],
+        plain: ['So, how\'s my singing~', 'Hmph, I\'m smart, just lazy', 'Praise me again and I\'ll sing louder', 'Listen, this part is my own addition'] },
+      { key: 'curious', name: 'Curious', tone: 'curious, as if asking', hints: ['Rubik\'s cube', 'Toy car', 'Gomoku', 'Coding', 'Taking notes', 'Blowing bubbles', 'Unwrapping a gift', 'Try-on', 'Reading', 'Look'],
         rateMs: 4600, rate: 0, vol: 1,
-        theme: ['{song}下一句会是什么呀？', '我猜{song}里藏了个秘密', '咦，{song}的调子好奇怪呀', '{song}里那句是什么意思呀'],
-        plain: ['咦，这个调调是从哪来的？', '让我想想下一句该唱什么…', '这个东西看着就好玩呀', '这个声音…是从哪冒出来的'] },
-      { key: 'bouncy', name: '雀跃', tone: '雀跃、蹦蹦跳跳的', hints: ['跳', '舞', '唱', '琴', '笛', '球', '毽子', '秋千', '木马', '放风筝', '烟花', '嗨起来', '活跃', '泡泡'],
+        theme: ['What\'s the next line of {song}?', 'I bet {song} hides a secret', 'Huh, {song}\'s melody is strange', 'What does that line in {song} mean?'],
+        plain: ['Huh, where does this tune come from?', 'Let me think what to sing next…', 'This thing looks fun', 'Where\'s that sound coming from?'] },
+      { key: 'bouncy', name: 'Bouncy', tone: 'bouncy and hopping', hints: ['Jump', 'Dance', 'Sing', 'Piano', 'Flute', 'Ball', 'Shuttlecock', 'Swing', 'Rocking horse', 'Flying a kite', 'Fireworks', 'Get hyped', 'Energetic', 'Bubbles'],
         rateMs: 2800, rate: 12, vol: 1,
-        theme: ['{song}！蹦着唱也不累～', '跟着{song}跳，尾巴打拍子！', '这首{song}我要唱给整片海听', '{song}再快一点！我还能跳～'],
-        plain: ['啦啦啦～尾巴都在打拍子！', '蹦一下再唱，这样最好听！', '开心得转圈圈，歌也变快了', '转个圈，接着唱下一句！'] },
-      { key: 'lively', name: '活泼', tone: '活泼、开心的', hints: ['吃', '玩', '水枪', '气球', '猫', '花', '蜜蜂', '蝴蝶', '礼物', '糖', '西瓜', '火锅', '月饼', '饺子', '汤圆', '年糕', '粽子', '正常'],
+        theme: ['{song}! I can hop and sing all day~', 'Dancing to {song}, my tail keeps the beat!', 'I\'ll sing this {song} to the whole sea', 'Faster, {song}! I can still dance~'],
+        plain: ['La la la~ even my tail is tapping!', 'A hop, then sing — that sounds best!', 'Spinning with joy, the song speeds up too', 'A little spin, then the next line!'] },
+      { key: 'lively', name: 'Lively', tone: 'lively and happy', hints: ['Eat', 'Play', 'Water pistol', 'Balloon', 'Cat', 'Flower', 'Bee', 'Butterfly', 'Gift', 'Candy', 'Watermelon', 'Hotpot', 'Mooncake', 'Dumplings', 'Tangyuan', 'Rice cakes', 'Zongzi', 'Normal'],
         rateMs: 3600, rate: 8, vol: 1,
-        theme: ['{song}配点心，正好刚刚好～', '一边吃一边唱{song}，快乐！', '主人的{song}，我吃到歌词里啦', '{song}唱着唱着就饿了呀～'],
-        plain: ['吃饱了就唱，越唱越有力气！', '啦啦～今天也是好心情呀', '唱给你听，要一直笑着哦', '边玩边唱，一个字都不会忘'] },
+        theme: ['{song} with a snack, just right~', 'Eating and singing {song}, so happy!', 'Master\'s {song} — I\'m eating the lyrics', '{song} makes me hungry~'],
+        plain: ['Singing on a full stomach, stronger every line!', 'La la~ good mood again today', 'Singing for you — keep smiling, okay', 'Playing and singing, I won\'t forget a word'] },
     ];
   }
 
@@ -4561,7 +4551,7 @@ class PetSprite {
 
   // 唱歌动画池（v3 的老池子，现在是兜底）：从她现有动作里挑「像在唱 / 演奏」的（一个都没有就退化成点击回应动画）
   singPool() {
-    const hints = ['小提琴演奏', '吹笛子', '轻快摇摆舞', '可爱宅舞', '优雅女仆舞', '摇扇纳凉', '原地敲击桌面互动'];
+    const hints = ['Playing violin', 'Playing flute', 'Bouncy dance', 'Cute otaku dance', 'Elegant maid dance', 'Folding fan', 'Tapping the desk'];
     const found = [];
     for (const c of this.animations.categories || []) {
       for (const a of c.actions || []) if (hints.indexOf(a) >= 0) found.push(a);
@@ -4587,26 +4577,26 @@ class PetSprite {
     //  现在统一取当前性格的人设全文（人设为空才回落到宠物名）。
     const P = this.personaTable();
     const p = P[this.persona] || P.none;
-    const petName = this.pet && this.pet.name ? String(this.pet.name) : '蓝毛小女仆';
+    const petName = this.pet && this.pet.name ? String(this.pet.name) : 'Blue-Haired Little Maid';
     const who = p.prompt
       ? p.prompt
-      : '你是主人桌面上的「' + petName + '」：说话短、口语、可爱，只用简体中文。';
+      : 'You are the "' + petName + '": speak short, casual, cute, English only.';
     return [
       who,
-      personaText ? '现在的说话方式：' + personaText + '。' : '',
-      '你正在一边' + (act ? '做动作「' + act + '」' : '待着') + '一边自己编歌哼唱，此刻心情是「' + emo.name + '」。',
-      '写一句歌词：像唱歌一样顺口，贴合这个心情和这个动作，不超过 18 个字。',
-      '只输出这一句歌词本身：不要引号、不要解释、不要换行、不要说你在写歌词。',
+      personaText ? 'How you speak now:' + personaText + '.' : '',
+      'You are currently ' + (act ? 'doing the action "' + act + '"' : 'just hanging around') + ', humming a made-up song, and your mood is "' + emo.name + '".',
+      'Write one line of lyrics: singable and smooth, matching this mood and action, under 18 words.',
+      'Output only the lyric line itself: no quotes, no explanation, no line breaks, don\'t say you\'re writing lyrics.',
     ].filter(Boolean).join('\n');
   }
 
   singPrompt(theme, emo, act, recent) {
     return [
-      theme ? '正在放这首歌：' + theme : '没有在放歌，随便编一个轻快的主题。',
-      act ? '你现在正在做的动作：' + act + '。' : '',
-      '此刻心情：' + emo.name + '，所以词要' + emo.tone + '。',
-      recent && recent.length ? '最近唱过的（别重复）：' + recent.slice(-3).join(' / ') : '',
-      '现在就写下一句歌词（不超过 18 个字，直接输出这一句）。',
+      theme ? 'This song is playing:' + theme : 'Nothing is playing; make up a light-hearted theme.',
+      act ? 'What you\'re doing right now:' + act + '.' : '',
+      'Current mood:' + emo.name + ', so the lyrics should be ' + emo.tone + '.',
+      recent && recent.length ? 'Recently sung (don\'t repeat):' + recent.slice(-3).join(' / ') : '',
+      'Now write the next lyric line (under 18 words, output the line directly).',
     ].filter(Boolean).join('\n');
   }
 
@@ -4625,7 +4615,7 @@ class PetSprite {
   singFallback(emo, theme, avoid) {
     const t = this.singTheme(theme);
     const list = t ? (emo.theme || []).map((s) => s.split('{song}').join(t)) : (emo.plain || []).slice();
-    if (!list.length) return '啦啦啦～我自己编的，好听吗？';
+    if (!list.length) return 'La la la~ I made this up myself, do you like it?';
     for (let i = 0; i < list.length; i++) {
       const idx = ((this.singFallbackSeq || 0) + i) % list.length;
       if (list[idx] !== avoid) {
@@ -4723,7 +4713,7 @@ class PetSprite {
 
   singFinish() {
     this.stopSinging();
-    this.showWhisper('唱完啦～这首是我现编的。');
+    this.showWhisper('Finished~ that one was made up on the spot.');
   }
 
   startImprovisedSinging(theme, loop) {
@@ -4816,14 +4806,14 @@ class PetSprite {
       onSend: () => this.chatReplyPending(),
       onReply: (reply, image) => {
         this.chatReplyDone();
-        console.info('[dsh-pet] 对话回复 pet=' + this.pet.id + '「' + reply + '」' + (image ? ' [' + image + ']' : ''));
+        console.info('[dsh-pet] chat reply pet=' + this.pet.id + '"' + reply + '"' + (image ? ' [' + image + ']' : ''));
         this.ttsKind('chat'); // [local patch T] 对话弹窗的回复
         this.showWhisper(reply, image); // 复用碎碎念链路：随机说话动画 + 气泡 10s（含配图）
       },
       onError: (why) => {
         this.chatReplyDone(0);
         this.ttsKind('chat');
-        this.showWhisper('刚才那句没接上…（' + String(why || '未知原因') + '）');
+        this.showWhisper('That line didn\'t land… (' + String(why || 'unknown reason') + ')');
       },
       onClose: () => {
         this.chatClose = null;

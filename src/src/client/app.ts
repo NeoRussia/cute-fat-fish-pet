@@ -48,7 +48,7 @@ export function makeFactory(): (require: (mod: string) => any) => any {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DSH 注入服务无静态类型
         const commandUi = (ctx as any).get?.('commandUi');
         if (!commandUi || typeof commandUi.decorate !== 'function') {
-          console.warn('[dsh-pet] 命令选择框不可用：commandUi 服务缺失（/pet 仍可手输 id 或名字）');
+          console.warn('[dsh-pet] command picker unavailable: commandUi service missing (/pet still accepts an id or name)');
           return () => {};
         }
         return commandUi.decorate({

@@ -94,7 +94,7 @@ async function readBody(res) {
 	try {
 		return JSON.parse(text);
 	} catch {
-		return { ok: false, reason: "bad-response", message: `控制桥回了非 JSON（HTTP ${res.status}）：${text.slice(0, 200)}` };
+		return { ok: false, reason: "bad-response", message: `The control bridge returned non-JSON (HTTP ${res.status}): ${text.slice(0, 200)}` };
 	}
 }
 
@@ -153,7 +153,7 @@ function parseState(raw) {
 /** 读回桌宠渲染进程里那几个 localStorage 键（唯一能拿到它们的办法）。 */
 async function controlState(petId) {
 	const p = await controlPort();
-	if (!p) return { ok: false, reason: "no-control-bridge", hint: "桌宠没在跑，或者 helper 还没起来" };
+	if (!p) return { ok: false, reason: "no-control-bridge", hint: "The pet isn't running, or the helper hasn't started yet" };
 	try {
 		const res = await fetch(`http://${HOST}:${p}/state?pet=${encodeURIComponent(petId || "main")}`, {
 			headers: authHeaders(),
@@ -161,7 +161,7 @@ async function controlState(petId) {
 		});
 		const body = await readBody(res);
 		if (res.status === 401 || (body && body.reason === "unauthorized")) {
-			return { ok: false, reason: "unauthorized", message: `控制桥要密钥，但 ${CONTROL_FILE} 里没有可用的 token（或者对面是老版本 helper）——请让桌宠重启一次再试` };
+			return { ok: false, reason: "unauthorized", message: `The control bridge needs a key, but ${CONTROL_FILE} has no usable token (or the other end is an old helper) — restart the pet and try again` };
 		}
 		if (!res.ok) {
 			return { ok: false, reason: "control-error", message: (body && (body.message || body.reason)) || `HTTP ${res.status}` };
@@ -194,7 +194,7 @@ async function controlSet(kind, value, opts) {
 		});
 		const body = await readBody(res);
 		if (res.status === 401 || (body && body.reason === "unauthorized")) {
-			return { ok: false, reason: "unauthorized", port: p, message: `控制桥拒绝了这次写入：密钥不对或读不到（${CONTROL_FILE}），桌宠重启一次再来` };
+			return { ok: false, reason: "unauthorized", port: p, message: `The control bridge rejected this write: wrong or unreadable key (${CONTROL_FILE}) — restart the pet and try again` };
 		}
 		return Object.assign({ ok: res.ok && (!body || body.ok !== false), port: p }, body || {});
 	} catch (e) {
@@ -217,7 +217,7 @@ async function controlPatch(kind, patch, opts) {
 // ---------------------------------------------------------------------------
 const ONLINE_DEFAULT = {
 	enabled: false,
-	name: "联网模型",
+	name: "Online model",
 	baseUrl: "https://api.deepseek.com",
 	apiKey: "",
 	model: "deepseek-chat",
@@ -258,7 +258,7 @@ async function onlineTest(extra) {
 	const cfg = Object.assign({}, readOnline(), extra || {});
 	const which = cfg.which === "vision" ? "vision" : "chat";
 	if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) {
-		return { ok: false, reason: "missing", message: "baseUrl / apiKey / model 三样都要填" };
+		return { ok: false, reason: "missing", message: "baseUrl, apiKey and model must all be filled in" };
 	}
 	try {
 		const mod = await import(require("node:url").pathToFileURL(path.join(REPO, "standalone", "online.mjs")).href);
@@ -282,8 +282,8 @@ function readPersonas() {
 function savePersona(name, text) {
 	const clean = String(name || "").trim().slice(0, 40);
 	const body = String(text || "").trim();
-	if (!clean) return { ok: false, reason: "bad-name", message: "给它起个名字" };
-	if (body.length < 10) return { ok: false, reason: "too-short", message: "人设至少写 10 个字" };
+	if (!clean) return { ok: false, reason: "bad-name", message: "Give it a name" };
+	if (body.length < 10) return { ok: false, reason: "too-short", message: "The persona must be at least 10 characters" };
 	const store = readPersonas();
 	const list = store.list.filter((x) => x.name !== clean);
 	list.unshift({ name: clean, text: body, at: Date.now() });
@@ -306,7 +306,7 @@ function deletePersona(name) {
 /** 把任意一段人设写进 main-config.json 的 whisperPrompt（备份 + 复验，跟桌宠自己的写法一致）。 */
 function writePersonaText(text) {
 	const want = String(text || "").trim();
-	if (want.length < 10) return { ok: false, reason: "too-short", message: "人设至少写 10 个字" };
+	if (want.length < 10) return { ok: false, reason: "too-short", message: "The persona must be at least 10 characters" };
 	const cfg = readJson(CONFIG_FILE);
 	if (!cfg || typeof cfg !== "object") return { ok: false, reason: "no-config" };
 	cfg.whisperPrompt = want;
@@ -372,14 +372,14 @@ function listApps(limit = 400) {
 async function openTarget(kind, target) {
 	const { shell } = require("electron");
 	const t = String(target || "").trim();
-	if (!t) return { ok: false, reason: "empty", message: "先填要打开的东西" };
+	if (!t) return { ok: false, reason: "empty", message: "Fill in what to open first" };
 	if (kind === "url") {
 		const url = /^[a-z]+:\/\//i.test(t) ? t : `https://${t}`;
-		if (!/^https?:\/\//i.test(url)) return { ok: false, reason: "bad-url", message: "只认 http/https" };
+		if (!/^https?:\/\//i.test(url)) return { ok: false, reason: "bad-url", message: "http/https only" };
 		await shell.openExternal(url);
 		return { ok: true, opened: url };
 	}
-	if (!fs.existsSync(t)) return { ok: false, reason: "not-found", message: `找不到：${t}` };
+	if (!fs.existsSync(t)) return { ok: false, reason: "not-found", message: `Not found: ${t}` };
 	const err = await shell.openPath(t);
 	return err ? { ok: false, reason: "open-failed", message: err } : { ok: true, opened: t };
 }

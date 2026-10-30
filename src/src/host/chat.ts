@@ -44,9 +44,9 @@ const TIMEOUT_MS = 60_000;
 /** 配图指令：附在 user 正文之后（紧邻回答位置，模型更容易遵守） */
 function imageInstruction(pool: MemeEntry[]): string {
   return (
-    '\n\n[配图] 回复结尾可选附一张表情包给用户看，从下列清单里挑最贴合当前语境的：\n' +
+    '\n\n[Image] You may attach one meme at the end of your reply for the user; pick the one that best fits the current context from this list:\n' +
     memeCatalog(pool) +
-    '\n挑中就在回复最后另起一行写 [图:名称]（名称原样照抄）；没有合适的就完全不要写这个标记。'
+    '\nIf you pick one, add a new line at the very end of your reply with [img:name] (copy the name exactly). If nothing fits, do not write the marker at all.'
   );
 }
 
@@ -70,14 +70,14 @@ export async function generateChat(
   try {
     sel = ctx.agentDefaultModel.currentSelection();
   } catch {
-    return { ok: false, reason: 'provider-missing', message: '当前对话未配置模型' };
+    return { ok: false, reason: 'provider-missing', message: 'No model configured for this conversation' };
   }
   if (!sel?.provider || !sel?.model) {
-    return { ok: false, reason: 'provider-missing', message: '当前对话未配置模型' };
+    return { ok: false, reason: 'provider-missing', message: 'No model configured for this conversation' };
   }
   const llm = (ctx as { llm?: { stream(o: unknown): AsyncIterable<unknown> } }).llm;
   if (!llm || typeof llm.stream !== 'function') {
-    return { ok: false, reason: 'generate-error', message: 'LLM 服务不可用' };
+    return { ok: false, reason: 'generate-error', message: 'LLM service unavailable' };
   }
 
   // 历史 → dsh-llm 消息：user 经 createUserMessage（plugin 来源），assistant 经 createAssistantMessage
@@ -137,7 +137,7 @@ export async function generateChat(
     .map((b) => ('text' in b ? (b as { text: string }).text : ''))
     .join('')
     .trim();
-  if (!text) return { ok: false, reason: 'generate-error', message: '模型未返回文本' };
+  if (!text) return { ok: false, reason: 'generate-error', message: 'The model returned no text' };
   // 配图解析：命中池内才采纳并剥离标记；未选/幻觉名称 → 原样返回纯文本
   if (!wantImage) return { ok: true, text };
   const picked = extractChatImage(text, pool);

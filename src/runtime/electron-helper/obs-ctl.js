@@ -265,7 +265,7 @@ async function ensureRunning() {
       shell: false,
     });
     child.unref();
-    log('已拉起 OBS：' + exe + ' (pid ' + child.pid + ')');
+    log('OBS started:' + exe + ' (pid ' + child.pid + ')');
   } catch (e) {
     return { ok: false, error: 'obs-spawn-failed:' + String((e && e.message) || e) };
   }
@@ -353,15 +353,15 @@ if (require.main === module) {
   const action = (process.argv[2] || 'status').toLowerCase();
   const run = async () => {
     const cfg = readWsConfig();
-    console.log('配置: ' + WS_CFG);
-    const safe = cfg ? Object.assign({}, cfg, { password: cfg.password ? '(已设置, ' + cfg.password.length + ' 位)' : '(空)' }) : cfg;
-    console.log('  ' + JSON.stringify(safe) + '   exe=' + (findObsExe() || '(没找到)'));
+    console.log('Config: ' + WS_CFG);
+    const safe = cfg ? Object.assign({}, cfg, { password: cfg.password ? '(set, ' + cfg.password.length + ' bits)' : '(empty)' }) : cfg;
+    console.log('  ' + JSON.stringify(safe) + '   exe=' + (findObsExe() || '(not found)'));
     if (action === 'status') console.log(JSON.stringify(await status()));
     else if (action === 'start') console.log(JSON.stringify(await start()));
     else if (action === 'stop') console.log(JSON.stringify(await stop()));
     else if (action === 'ensure') console.log(JSON.stringify(await ensureRunning()));
     else if (action === 'cycle') { console.log(JSON.stringify(await start())); console.log(JSON.stringify(await status())); console.log(JSON.stringify(await stop())); }
-    else console.log('用法: node obs-ctl.js status|start|stop|ensure|cycle');
+    else console.log('Usage: node obs-ctl.js status|start|stop|ensure|cycle');
   };
-  run().then(() => process.exit(0)).catch((e) => { console.log('失败: ' + ((e && e.message) || e)); process.exit(1); });
+  run().then(() => process.exit(0)).catch((e) => { console.log('Failed: ' + ((e && e.message) || e)); process.exit(1); });
 }

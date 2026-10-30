@@ -232,7 +232,7 @@ function mergeEventsRefreshSec(base: unknown, overlay: unknown, label: string): 
     if (!Number.isFinite(n) || n <= 0) {
       warnOnce(
         `${label}:eventsRefreshSec.${eventName}`,
-        `「${label}」的 eventsRefreshSec.${eventName} 非法，已取默认值`,
+        `"${label}": eventsRefreshSec.${eventName} is invalid; using the default`,
       );
       out[eventName] = Number(baseSec);
       continue;
@@ -268,7 +268,7 @@ function mergeEntry(
       continue;
     }
     if (!topFieldValid(key, own)) {
-      warnOnce(`${label}:${key}`, `「${label}」的 ${key} 非法，已取默认值`);
+      warnOnce(`${label}:${key}`, `"${label}": ${key} is invalid; using the default`);
       out[key] = base[key];
       continue;
     }
@@ -286,7 +286,7 @@ function mergePets(
 ): Record<string, unknown>[] {
   const basePet: Record<string, unknown> = basePets[0] ?? {};
   if (!Array.isArray(raw) || raw.length === 0) {
-    warnOnce(`${label}:pets`, `「${label}」的 pets 缺失或为空，已取默认宠物列表`);
+    warnOnce(`${label}:pets`, `"${label}": pets is missing or empty; using the default pet list`);
     return basePets;
   }
   const out: Record<string, unknown>[] = [];
@@ -295,7 +295,7 @@ function mergePets(
     if (pet) out.push(pet);
   }
   if (out.length === 0) {
-    warnOnce(`${label}:pets`, `「${label}」的 pets 全部被跳过（id 非法/重复/冲突），已取默认宠物列表`);
+    warnOnce(`${label}:pets`, `"${label}": every pet was skipped (invalid, duplicate or conflicting id); using the default pet list`);
     return basePets;
   }
   return out;
@@ -307,7 +307,7 @@ function petNumber(own: unknown, def: unknown, min: number, label: string, field
   if (own !== undefined && own !== null && Number.isFinite(n) && n >= min) return n;
   // 缺失 = 常态（文件宠物可只写 id/name 等少量字段），静默取默认；显式写了但非法才是真异常
   if (own !== undefined && own !== null) {
-    warnOnce(`${label}:${field}:${id}`, `宠物「${id}」的 ${field} 非法，已取默认值`);
+    warnOnce(`${label}:${field}:${id}`, `Pet "${id}": ${field} is invalid; using the default`);
   }
   return Number(def);
 }
@@ -316,7 +316,7 @@ function petNumber(own: unknown, def: unknown, min: number, label: string, field
 function petBool(own: unknown, def: unknown, label: string, field: string, id: string): boolean {
   if (typeof own === 'boolean') return own;
   if (own !== undefined && own !== null) {
-    warnOnce(`${label}:${field}:${id}`, `宠物「${id}」的 ${field} 非法，已取默认值`);
+    warnOnce(`${label}:${field}:${id}`, `Pet "${id}": ${field} is invalid; using the default`);
   }
   return Boolean(def);
 }
@@ -332,7 +332,7 @@ function petEnum(
 ): string {
   if (typeof own === 'string' && set.has(own)) return own;
   if (own !== undefined && own !== null) {
-    warnOnce(`${label}:${field}:${id}`, `宠物「${id}」的 ${field} 非法，已取默认值`);
+    warnOnce(`${label}:${field}:${id}`, `Pet "${id}": ${field} is invalid; using the default`);
   }
   return typeof def === 'string' ? def : '';
 }
@@ -347,14 +347,14 @@ function mergePet(
   const p = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const id = typeof p.id === 'string' ? p.id.trim() : '';
   if (!id || id.length > 64 || ID_FORBIDDEN.test(id) || seenIds.has(id)) {
-    warnOnce(`${label}:id:${id || '(空)'}`, `「${label}」的宠物 id「${id || '(空)'}」非法、重复或已存在，已跳过该实例`);
+    warnOnce(`${label}:id:${id || '(empty)'}`, `"${label}": pet id "${id || '(empty)'}" is invalid, duplicated or already taken; this instance was skipped`);
     return null;
   }
   seenIds.add(id);
   // name：缺失/空 → 按该宠物 id 处理（既定规则：可重复，不继承默认名字）
   const rawName = typeof p.name === 'string' ? p.name.trim() : '';
   const name = rawName || id;
-  if (!rawName) warnOnce(`${label}:name:${id}`, `宠物「${id}」缺少 name，已按 id 处理`);
+  if (!rawName) warnOnce(`${label}:name:${id}`, `Pet "${id}" has no name; using the id instead`);
 
   // position：逐子字段合并（缺失 → 静默取默认；显式写但非法 → 告警 + 默认）
   const basePos = base.position && typeof base.position === 'object' ? (base.position as Record<string, unknown>) : {};
@@ -383,7 +383,7 @@ function mergePet(
  */
 export function readAllConfig(paths: ConfigPaths): Record<string, Record<string, unknown>> {
   const base = readJsonc(paths.defaultFile);
-  if (!base) throw new Error('dsh-pet: 内置默认配置缺失或解析失败（安装损坏）：' + paths.defaultFile);
+  if (!base) throw new Error('dsh-pet: built-in default config missing or unparsable (damaged install): ' + paths.defaultFile);
   const basePets = Array.isArray(base.pets) ? (base.pets as Record<string, unknown>[]) : [];
   const seenIds = new Set<string>();
   const out: Record<string, Record<string, unknown>> = {};
@@ -391,7 +391,7 @@ export function readAllConfig(paths: ConfigPaths): Record<string, Record<string,
   // main 条目：内置默认 ← main-config.json（可编辑层）
   const mainOverlay = readJsonc(paths.userFile);
   if (existsSync(paths.userFile) && !mainOverlay) {
-    warnOnce('file:' + paths.userFile, '用户主配置解析失败，已按无用户配置处理：' + paths.userFile);
+    warnOnce('file:' + paths.userFile, 'Failed to parse the user config; continuing without it: ' + paths.userFile);
   }
   out.main = mergeEntry(base, mainOverlay, 'main-config.json', basePets, seenIds);
 
@@ -399,7 +399,7 @@ export function readAllConfig(paths: ConfigPaths): Record<string, Record<string,
   for (const file of scanPetFiles(paths.petDir)) {
     const parsed = readJsonc(file.path);
     if (!parsed) {
-      warnOnce('file:' + file.path, '文件宠物配置解析失败，已跳过：' + file.path);
+      warnOnce('file:' + file.path, 'Failed to parse a file-defined pet config; skipped: ' + file.path);
       continue;
     }
     out[file.prefix] = mergeEntry(base, parsed, file.prefix + '-config.json', basePets, seenIds);
@@ -457,7 +457,7 @@ export function saveUserConfig(
     // 显示名：可重复不校验唯一；缺失/留空/非字符串 → 按该宠物 id 处理（兼容旧配置）并告警
     let name = typeof pp.name === 'string' ? pp.name.trim() : '';
     if (!name) {
-      console.warn(`dsh-pet: pet「${id}」缺少 name，已按默认 ${id}（宠物 id）处理`);
+      console.warn(`dsh-pet: pet "${id}" has no name; using the default ${id} (pet id)`);
       name = id;
     }
     const balanceEnabled = pp.balanceEnabled;

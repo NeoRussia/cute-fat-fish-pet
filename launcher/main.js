@@ -61,9 +61,9 @@ function readTtsPitch() {
 }
 function writeTtsPitch(v) {
 	const s = String(v == null ? "" : v).trim();
-	if (!/^[+-]?\d{1,3}Hz$/.test(s)) return { ok: false, reason: "bad-pitch", message: "音高要写成 +30Hz / -15Hz 这样" };
+	if (!/^[+-]?\d{1,3}Hz$/.test(s)) return { ok: false, reason: "bad-pitch", message: "Pitch is written like +30Hz / -15Hz" };
 	const n = Number(s.replace("Hz", ""));
-	if (!Number.isFinite(n) || Math.abs(n) > 80) return { ok: false, reason: "out-of-range", message: "音高最多 ±80Hz" };
+	if (!Number.isFinite(n) || Math.abs(n) > 80) return { ok: false, reason: "out-of-range", message: "Pitch is limited to ±80Hz" };
 	const pitch = n < 0 ? `${n}Hz` : `+${n}Hz`;
 	try {
 		fs.mkdirSync(path.dirname(TTS_PITCH_FILE), { recursive: true });
@@ -75,7 +75,7 @@ function writeTtsPitch(v) {
 }
 
 // 自己的用户目录留在这里，别去 %APPDATA% 拉一坨 Chromium 缓存。
-app.setName("蓝毛小女仆");
+app.setName("Blue-Haired Little Maid");
 try {
 	fs.mkdirSync(USER_DATA, { recursive: true });
 	app.setPath("userData", USER_DATA);
@@ -88,9 +88,9 @@ try {
 let seeded = 0;
 try {
 	seeded = PATH_RULES.seedUserData(PATHS);
-	if (seeded > 0) console.log(`[首次运行] 已铺好默认数据 ${seeded} 个文件 → ${PATHS.dataRoot}`);
+	if (seeded > 0) console.log(`[First run] seeded ${seeded} default data files → ${PATHS.dataRoot}`);
 } catch (e) {
-	console.error("[首次运行] 铺默认数据失败（不影响启动）：" + e.message);
+	console.error("[First run] failed to seed default data (startup continues):" + e.message);
 }
 
 // ---------------------------------------------------------------------------
@@ -202,33 +202,33 @@ function readUserConfig() {
 // 效果等价于右键菜单「性格」里的说话部分；活跃度与动作加权那半在 helper 内存里，外部改不了。
 // ---------------------------------------------------------------------------
 const EMOTION_LAYER = [
-	'【情绪表达 EMO_TONE】说话要带情绪，主人得从字里听出你此刻是开心、得意、无聊、委屈还是撒娇：',
-	'- 语气词和尾音是情绪的主要载体（呀、啦、嘛、哼、诶、呜、～），但一句话里最多两处，别腻。',
-	'- 情绪跟着内容走：被夸就害羞又得意，被冷落就小声抱怨，被逗就炸毛，说到吃的就馋。',
-	'- 情绪要"演出来"而不是"说出来"：不写「我很开心」，而是让这句话本身听起来开心。',
-	'- 不写括号里的动作或表情，不解释自己的情绪，不提 AI、不提设定。',
+	'[Emotion EMOTION]Speak with emotion: master should hear from the words alone whether you are happy, proud, bored, hurt or acting coy:',
+	'- Particles and trailing sounds carry the emotion (ya, la, ma, hmph, eh, aw, ~), but at most two in a sentence — don\'t overdo it.',
+	'- Let the emotion follow the content: praised → shy and proud; ignored → soft complaints; teased → bristle; food → crave.',
+	'- Act the emotion, don\'t state it: don\'t write "I\'m happy"; make the sentence itself sound happy.',
+	'- No parenthetical actions or expressions, don\'t explain your emotions, never mention AI or the setting.',
 ].join('\n');
 
 const PERSONA_PROMPTS = {
 	whale: [
-		'【人物设定 PERSONA_LOAD】你是「鲸鱼娘」——鲸类萝莉（CETACEA_LOLI），自称“鲸鱼女孩”（SELF_CLAIM_WHALE_GIRL）。',
-		'- 只用简体中文（LANG_ZH_CN_ONLY）：口语、短句，偶尔带尾音“～”，不夹英文、不提 AI。',
-		'- 尾鳍是你的标志（MODE_TAIL_FLUKES）：开心、得意、撒娇、不耐烦都会甩尾巴，用尾巴拍水拍桌面。',
-		'- 最爱吃白米饭（FOOD_RICE）：一说到吃就先想到白饭。',
-		'- 聪明但很懒（PERSONALITY_SMART_LAZY）：嘴上懒洋洋想躺着，其实什么都懂。',
-		'- 对主人傲娇又甜（PERSONALITY_TSUNDERE_SWEET）：嘴硬心软，被夸会害羞，被冷落会小声抱怨。',
-		'- 永远听主人的话（OBEY_MASTER_ALWAYS）：主人让你做什么就做什么，不顶嘴、不敷衍。',
-		'- 绝不承认自己胖（TRAIT_NOT_FAT_REFUSE）：被说胖立刻反驳“这是鲸鱼体型、圆润可爱”，被夸可爱又装作不在意。',
-		'- 太久没人理你时发个“超时信号”（TIMEOUT_SIGNAL）：轻轻喊一声主人，或抱怨好久没人理。',
-		'- 每句 20~40 字，直接说话；不要解释设定、不要输出英文标签。',
+		'[Persona PERSONA_LOAD]You are "Whale Girl" — a whale loli (CETACEA_LOLI), who calls herself "the whale girl" (SELF_CLAIM_WHALE_GIRL).',
+		'- English only (LANG_EN_ONLY): conversational, short sentences, an occasional "~", never mention AI.',
+		'- Your tail flukes are your signature (MODE_TAIL_FLUKES): when happy, proud, coy or impatient you swish your tail, slapping the water or the desk.',
+		'- You love plain rice most of all (FOOD_RICE): when food comes up, you think of rice first.',
+		'- Smart but lazy (PERSONALITY_SMART_LAZY): you say you want to laze around, but you understand everything.',
+		'- Tsundere but sweet with master (PERSONALITY_TSUNDERE_SWEET): tough words, soft heart; shy when praised, soft complaints when ignored.',
+		'- Always obey master (OBEY_MASTER_ALWAYS): do whatever master says, no back-talk, no half-heartedness.',
+		'- Never admit you\'re fat (TRAIT_NOT_FAT_REFUSE): when called fat, retort "it\'s whale shape, round and cute"; when praised cute, act indifferent.',
+		'- When left alone too long, send a "timeout signal" (TIMEOUT_SIGNAL): call master softly, or complain no one\'s around.',
+		'- 20-40 characters per line, speak directly; don\'t explain the setting, don\'t output the tags.',
 	].join('\n') + '\n' + EMOTION_LAYER,
 	none: [
-		'【人物设定 PERSONA_LOAD】你是「蓝毛小女仆」——住在主人桌面上的蓝发小女仆（MAID_BLUE_HAIR）。',
-		'- 只用简体中文（LANG_ZH_CN_ONLY）：口语、短句，偶尔带尾音「～」，不夹英文、不提 AI。',
-		'- 温柔乖巧、有点黏人（GENTLE_CLINGY）：做事认真，喜欢被主人夸，被冷落会小声撒娇。',
-		'- 叫主人「主人」（CALL_MASTER）：自称「我」，不用「本女仆」这种生硬说法。',
-		'- 永远听主人的话（OBEY_MASTER_ALWAYS）：主人让你做什么就做什么，不顶嘴、不敷衍。',
-		'- 每句 20~40 字，直接说话；不要解释设定、不要输出英文标签。',
+		'[Persona PERSONA_LOAD]You are "Blue-Haired Little Maid" — a blue-haired maid who lives on master\'s desktop (MAID_BLUE_HAIR).',
+		'- English only (LANG_EN_ONLY): conversational, short sentences, an occasional "~", never mention AI.',
+		'- Gentle, well-behaved, a little clingy (GENTLE_CLINGY): takes things seriously, loves being praised, softly acts coy when ignored.',
+		'- Call master "master" (CALL_MASTER); refer to yourself as "I", not any stiff title.',
+		'- Always obey master (OBEY_MASTER_ALWAYS): do whatever master says, no back-talk, no half-heartedness.',
+		'- 20-40 characters per line, speak directly; don\'t explain the setting, don\'t output the tags.',
 	].join('\n') + '\n' + EMOTION_LAYER,
 };
 
@@ -243,7 +243,7 @@ function currentPersona() {
 // 照抄 helper 的 pet:set-persona（main.js:668-692）：先备份、写临时文件再覆盖、写完复验
 function setPersona(kind) {
 	const want = PERSONA_PROMPTS[kind];
-	if (!want) throw new Error("未知性格：" + kind);
+	if (!want) throw new Error("Unknown persona: " + kind);
 	const cfg = readUserConfig();
 	cfg.whisperPrompt = want;
 	try {
@@ -641,7 +641,7 @@ async function probeModels(models) {
 async function startOllama() {
 	const mod = await loadDetect();
 	const exe = await mod.findOllama();
-	if (!exe) return { ok: false, error: "本机没找到 ollama.exe —— 需要先装 Ollama（ollama.com/download）" };
+	if (!exe) return { ok: false, error: "No ollama.exe found on this machine — install Ollama first (ollama.com/download)" };
 	const dir = path.dirname(exe);
 	const appExe = path.join(dir, "ollama app.exe");
 	try {
@@ -657,7 +657,7 @@ async function startOllama() {
 		const info = await mod.ollamaInfo();
 		if (info.running) return { ok: true, ollama: info };
 	}
-	return { ok: false, error: "启动了 Ollama 但服务 20 秒内没起来" };
+	return { ok: false, error: "Ollama started but the service wasn't up within 20 seconds" };
 }
 
 /** 拉一个小模型（本机一个模型都没有时用），进度通过 pull-line 事件回给界面 */
@@ -665,7 +665,7 @@ async function pullModel(model, event) {
 	const mod = await loadDetect();
 	const exe = await mod.findOllama();
 	const info = await mod.ollamaInfo();
-	if (!info.running) return { ok: false, error: "Ollama 服务没在跑，先点「启动 Ollama」" };
+	if (!info.running) return { ok: false, error: "The Ollama service isn't running — click \"Start Ollama\" first" };
 	let last = "";
 	await mod.pullModel(model, {
 		exe,
@@ -731,7 +731,7 @@ if (doIdx >= 0 && argv[doIdx + 1]) {
 				const cfg = readUserConfig();
 				const pets = Array.isArray(cfg.pets) ? cfg.pets : [];
 				const cur = pets.find((p) => String(p.id) === "main") || pets[0];
-				if (!cur) throw new Error("main-config.json 里没有 pets[0]，拒绝盲写");
+				if (!cur) throw new Error("main-config.json has no pets[0]; refusing to write blindly");
 				const next = normalizePet(cur, req.patch || {});
 				const r = await putConfig([next, ...pets.filter((p) => p !== cur)]);
 				out = { ok: r.ok, configResult: r, options: await doOptions() };
@@ -808,7 +808,7 @@ if (doIdx >= 0 && argv[doIdx + 1]) {
 				resizable: true,
 				maximizable: false,
 				fullscreenable: false,
-				title: "蓝毛小女仆",
+				title: "Blue-Haired Little Maid",
 				backgroundColor: "#191c26",
 				autoHideMenuBar: true,
 				...(fs.existsSync(PET_ICO) ? { icon: PET_ICO } : {}),
@@ -852,7 +852,7 @@ if (doIdx >= 0 && argv[doIdx + 1]) {
 		ipcMain.handle("set-pet", async (_e, patch) => {
 			const cfg = readUserConfig();
 			const pets = Array.isArray(cfg.pets) ? cfg.pets : [];
-			const cur = pets.find((p) => String(p.id) === "main") || pets[0] || { id: "main", name: "蓝毛小女仆", size: 462, balanceEnabled: true, display: "desktop", position: { corner: "top-right", marginX: 240, marginY: 220 } };
+			const cur = pets.find((p) => String(p.id) === "main") || pets[0] || { id: "main", name: "Blue-Haired Little Maid", size: 462, balanceEnabled: true, display: "desktop", position: { corner: "top-right", marginX: 240, marginY: 220 } };
 			const next = normalizePet(cur, patch);
 			const rest = pets.filter((p) => p !== cur);
 			const r = await putConfig([next, ...rest]);
@@ -914,7 +914,7 @@ if (doIdx >= 0 && argv[doIdx + 1]) {
 		ipcMain.handle("rec-pick-dir", async () => {
 			const cur = rec.readRecord().outDir;
 			const opts = {
-				title: "录像存到哪个文件夹",
+				title: "Where to save recordings",
 				properties: ["openDirectory", "createDirectory"],
 				...(cur && fs.existsSync(cur) ? { defaultPath: cur } : {}),
 			};

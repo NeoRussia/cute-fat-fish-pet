@@ -29,7 +29,7 @@ export type WhisperGenerateResult =
 const TIMEOUT_MS = 30_000;
 
 /** 碎碎念指令：纯文本（原行为） */
-const USER_TEXT = '随便说一句日常碎碎念，一句就好，20 字以内。';
+const USER_TEXT = 'Say one everyday idle line, just one, under 20 words.';
 
 /**
  * 碎碎念指令：带表情包（用户开启 whisperImageEnabled 时）——要求模型配合作画说一句。
@@ -37,13 +37,13 @@ const USER_TEXT = '随便说一句日常碎碎念，一句就好，20 字以内�
  */
 function userTextWithMeme(meme: { name: string; desc: string }): string {
   return (
-    '随便说一句日常碎碎念，一句就好，20 字以内。\n' +
-    '这次会配一张表情包一起显示，图的内容是：' +
+    'Say one everyday idle line, just one, under 20 words.\n' +
+    'A meme will be shown alongside it this time. The image shows:' +
     meme.name +
-    '（' +
+    '(' +
     meme.desc +
-    '）。\n' +
-    '请让这句话和这张图的情绪/场景自然契合，像是配合画面说出来的；不要描述画面本身。'
+    ').\n' +
+    'Make the line fit the mood or scene of the image naturally, as if you were speaking along with it; do not describe the image itself.'
   );
 }
 
@@ -64,15 +64,15 @@ export async function generateWhisper(
   try {
     sel = ctx.agentDefaultModel.currentSelection();
   } catch {
-    return { ok: false, reason: 'provider-missing', message: '当前对话未配置模型' };
+    return { ok: false, reason: 'provider-missing', message: 'No model configured for this conversation' };
   }
   if (!sel?.provider || !sel?.model) {
-    return { ok: false, reason: 'provider-missing', message: '当前对话未配置模型' };
+    return { ok: false, reason: 'provider-missing', message: 'No model configured for this conversation' };
   }
   // ctx.llm 是核心服务但保持防御：缺失时显式失败（静默跳过由上层决定）
   const llm = (ctx as { llm?: { stream(o: unknown): AsyncIterable<unknown> } }).llm;
   if (!llm || typeof llm.stream !== 'function') {
-    return { ok: false, reason: 'generate-error', message: 'LLM 服务不可用' };
+    return { ok: false, reason: 'generate-error', message: 'LLM service unavailable' };
   }
 
   const deadline = AbortSignal.timeout(TIMEOUT_MS);
@@ -116,6 +116,6 @@ export async function generateWhisper(
     .map((b) => ('text' in b ? (b as { text: string }).text : ''))
     .join('')
     .trim();
-  if (!text) return { ok: false, reason: 'generate-error', message: '模型未返回文本' };
+  if (!text) return { ok: false, reason: 'generate-error', message: 'The model returned no text' };
   return meme ? { ok: true, text, image: meme.name } : { ok: true, text };
 }

@@ -28,7 +28,7 @@ export async function sendChat(baseUrl: string, text: string): Promise<ChatSendS
     signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
   });
   const raw: unknown = await res.json().catch(() => null);
-  if (!raw || typeof raw !== 'object') throw new Error('dsh-pet: 对话响应非法');
+  if (!raw || typeof raw !== 'object') throw new Error('dsh-pet: malformed chat response');
   const o = raw as Record<string, unknown>;
   if (o.ok !== true) {
     return {
@@ -41,7 +41,7 @@ export async function sendChat(baseUrl: string, text: string): Promise<ChatSendS
     };
   }
   const reply = typeof o.reply === 'string' ? o.reply.trim() : '';
-  if (!reply) throw new Error('dsh-pet: 对话回复非法');
+  if (!reply) throw new Error('dsh-pet: malformed chat reply');
   const image = typeof o.image === 'string' && o.image.trim() ? o.image.trim() : undefined;
   return image ? { ok: true, reply, image, ts: Number(o.ts) || 0 } : { ok: true, reply, ts: Number(o.ts) || 0 };
 }
@@ -55,7 +55,7 @@ export const CHAT_CSS = [
   'background:rgba(255,255,255,.98);border:1px solid rgba(0,0,0,.12);border-radius:10px;',
   'box-shadow:0 10px 32px rgba(0,0,0,.22);color:#2b2b2b;font-size:14px;line-height:1.5;',
   // 字体与桌宠气泡同款（上首软糖体，两端均已注入 @font-face），风格一致不显正式
-  "font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','幼圆','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
+  "font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
   'user-select:none}',
   '.dsh-pet-chat *{box-sizing:border-box}',
   '.dsh-pet-chat-input{display:block;width:100%;border:none;outline:none;background:transparent;',
@@ -125,7 +125,7 @@ export function mountChatDialog(opts: {
 
   const input = document.createElement('textarea');
   input.className = 'dsh-pet-chat-input';
-  input.placeholder = '说点什么…';
+  input.placeholder = 'Say something…';
   input.maxLength = 2000;
   input.rows = 1;
 
@@ -196,12 +196,12 @@ export function mountChatDialog(opts: {
           close();
           if (onReply) onReply(state.reply, state.image);
         } else {
-          err.textContent = '对话失败：' + (state.message ?? state.reason);
+          err.textContent = 'Chat failed: ' + (state.message ?? state.reason);
           err.style.display = 'block';
         }
       })
       .catch((e) => {
-        err.textContent = '对话异常：' + String(e && e.message ? e.message : e);
+        err.textContent = 'Chat error: ' + String(e && e.message ? e.message : e);
         err.style.display = 'block';
       })
       .finally(() => {

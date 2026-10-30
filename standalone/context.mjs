@@ -117,7 +117,7 @@ export function createStandaloneContext(options = {}) {
 	const fail = (what, error) => {
 		const message = error instanceof Error ? error.message : String(error);
 		failures.push(`${what}: ${message}`);
-		logger.error(`初始化某项失败（已跳过）：${what}: ${message}`);
+		logger.error(`Failed to init something (skipped): ${what}: ${message}`);
 	};
 
 	const noopDisposer = () => {};
@@ -233,7 +233,7 @@ export function createStandaloneContext(options = {}) {
 					ok: false,
 					provider,
 					reason: "credential-missing",
-					message: "查余额要联网 Key：控制台「模型 · AI 大脑 → 联网模型」里填接口地址（https://api.deepseek.com）和 API Key，再点保存。",
+					message: "Checking balance needs a web key: in the console under \"Model · AI brain → Online model\", fill in the endpoint (https://api.deepseek.com) and API key, then save.",
 				};
 			}
 			if (!/deepseek/i.test(base)) return { ok: false, provider, reason: "unsupported", message: "" };
@@ -245,7 +245,7 @@ export function createStandaloneContext(options = {}) {
 				const body = await res.json().catch(() => null);
 				const infos = body && Array.isArray(body.balance_infos) ? body.balance_infos : null;
 				if (!res.ok || !infos || infos.length === 0) {
-					return { ok: false, provider, reason: "fetch-error", message: "余额接口没给出 balance_infos（HTTP " + res.status + "）" };
+					return { ok: false, provider, reason: "fetch-error", message: "The balance endpoint returned no balance_infos (HTTP " + res.status + ")" };
 				}
 				const first = infos[0] || {};
 				const str = (v, d) => (typeof v === "string" && v ? v : d);
@@ -267,8 +267,8 @@ export function createStandaloneContext(options = {}) {
 
 		llm: {
 			listProviders() {
-				const list = [{ id: LOCAL_PROVIDER, name: "本机 Ollama（独立模式）" }];
-				if (onlineReady()) list.push({ id: ONLINE_PROVIDER, name: readOnlineConfig().name || "联网模型（独立模式）" });
+				const list = [{ id: LOCAL_PROVIDER, name: "Local Ollama (standalone mode)" }];
+				if (onlineReady()) list.push({ id: ONLINE_PROVIDER, name: readOnlineConfig().name || "Online model (standalone mode)" });
 				return list;
 			},
 			async listModels() {

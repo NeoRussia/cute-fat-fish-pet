@@ -36,84 +36,84 @@ export const petBridge: {
 export const NS = 'pet.config';
 
 export const zh = {
-  nav: '桌宠配置',
-  intro: '管理多个桌宠：每个宠物可独立设置大小与位置（保存后即时生效）。',
-  petsLabel: '宠物列表',
-  add: '添加宠物',
-  remove: '删除',
-  confirmRemove: '确定删除宠物「{id}」吗？',
-  confirmTitle: '确认操作',
-  cancel: '取消',
-  atLeastOne: '至少保留一个宠物。',
-  emptyPets: '暂无宠物，点击「添加宠物」创建。',
-  sizeLabel: '大小（宽度 px）',
-  sizeHint: '高度自动 = 宽度 × 9/16。',
-  nameLabel: '名字',
-  nameHint: '显示名：鼠标悬浮宠物时弹出，也会加进 AI 人设（你的名字是 X）。可重复，留空按宠物 id 处理。',
-  balanceEnabled: '余额功能',
-  balanceEnabledHint: '启用后该宠物触发余额动画并显示余额气泡。',
-  whisperEnabled: '碎碎念',
-  whisperEnabledHint: '启用后该宠物按周期用 AI 生成一句话并播碎碎念动画（人设与周期在配置文件顶层）。',
-  workStatusEnabled: '工作状态联动',
+  nav: 'Pet settings',
+  intro: 'Manage multiple pets: each one can have its own size and position (saved changes apply immediately).',
+  petsLabel: 'Pet list',
+  add: 'Add pet',
+  remove: 'Delete',
+  confirmRemove: 'Delete pet "{id}"?',
+  confirmTitle: 'Confirm',
+  cancel: 'Cancel',
+  atLeastOne: 'Keep at least one pet.',
+  emptyPets: 'No pets yet. Click "Add pet" to create one.',
+  sizeLabel: 'Size (width in px)',
+  sizeHint: 'Height is automatic: width × 9/16.',
+  nameLabel: 'Name',
+  nameHint: 'Display name: shown when the cursor hovers over the pet, and added to the AI persona (your name is X). May repeat; leave blank to use the pet id.',
+  balanceEnabled: 'Balance',
+  balanceEnabledHint: 'When enabled, this pet plays the balance animation and shows a balance bubble.',
+  whisperEnabled: 'Chatter',
+  whisperEnabledHint: 'When enabled, this pet asks the AI for a line on a timer and plays the chatter animation (persona and interval live at the top level of the config file).',
+  workStatusEnabled: 'Work status',
   workStatusEnabledHint:
-    '启用后该宠物跟随 DSH 工作状态：思考/工作中/等待确认/完成/出错时自动切对应动画并弹气泡（动画池在配置顶层，仅监听不调用模型）。',
-  displayLabel: '显示位置',
-  displayHint: 'web=仅浏览器 / desktop=仅桌面 / both=两者都显示 / none=都不显示',
-  'display.web': '仅浏览器',
-  'display.desktop': '仅桌面',
-  'display.both': '两者都显示',
-  'display.none': '都不显示',
-  cornerLabel: '位置',
-  'corner.top-left': '左上角',
-  'corner.top-right': '右上角',
-  'corner.bottom-left': '左下角',
-  'corner.bottom-right': '右下角',
-  marginX: '水平偏移',
-  marginY: '垂直偏移',
-  save: '保存',
-  reset: '恢复默认',
-  confirmReset: '确定恢复默认吗？将删除整个用户配置（含自定义的动画池与播放权重）。',
-  resetHint: '「重置」会删除整个用户配置（含自定义的动画池与播放权重），不只是宠物列表。',
-  configMeta: '高级配置（文件）',
-  configMetaHint: '用户配置可覆盖宠物列表 / 动画池 / 播放权重，修改后刷新或重启生效；默认配置为完整参考。',
-  defaultConfig: '默认配置（只读，完整参考）',
-  userConfig: '用户配置（自定义覆盖）',
-  animationDir: '动画素材目录（可自定义/扩充动画）',
-  saved: '已保存，桌宠即时生效。',
-  loadError: '加载配置失败',
-  invalid: '请检查输入：大小需为正数，边距可为任意数字。',
-  busy: '保存中…',
+    'When enabled, this pet follows DSH work state: thinking / working / waiting for confirmation / done / error each play their own animation and bubble (the animation pool is at the top level of the config; it only listens and never calls a model).',
+  displayLabel: 'Display',
+  displayHint: 'web = browser only / desktop = desktop only / both = show in both / none = hide',
+  'display.web': 'Browser only',
+  'display.desktop': 'Desktop only',
+  'display.both': 'Both',
+  'display.none': 'Neither',
+  cornerLabel: 'Position',
+  'corner.top-left': 'Top left',
+  'corner.top-right': 'Top right',
+  'corner.bottom-left': 'Bottom left',
+  'corner.bottom-right': 'Bottom right',
+  marginX: 'Horizontal offset',
+  marginY: 'Vertical offset',
+  save: 'Save',
+  reset: 'Restore defaults',
+  confirmReset: 'Restore defaults? This deletes the whole user config, including custom animation pools and play weights.',
+  resetHint: '"Reset" deletes the whole user config (including custom animation pools and play weights), not just the pet list.',
+  configMeta: 'Advanced (files)',
+  configMetaHint: 'The user config can override the pet list, animation pool and play weights; changes apply after a refresh or restart. The default config is the full reference.',
+  defaultConfig: 'Default config (read-only, full reference)',
+  userConfig: 'User config (your overrides)',
+  animationDir: 'Animation asset directory (add or customise animations)',
+  saved: 'Saved. The pet updates immediately.',
+  loadError: 'Failed to load config',
+  invalid: 'Check your input: size must be a positive number; margins can be any number.',
+  busy: 'Saving…',
   extraPetsHint:
-    '另 {n} 只额外宠物由 pet/ 目录文件定义（<名>-config.json + <名>-animation/），它们不在此列表——改文件即生效，刷新可见。',
-  notifyToggle: '系统通知',
-  notifyToggleHint: '对话完成 / 生成失败 / 权限申请 / 用户选择，在窗口失焦时弹出系统级通知（桌面右下角）。',
-  whisperImageToggle: '碎碎念配图',
+    '{n} more pets are defined by files in the pet/ directory (<name>-config.json + <name>-animation/). They are not in this list — editing the files takes effect immediately; refresh to see them.',
+  notifyToggle: 'System notifications',
+  notifyToggleHint: 'Chat finished / generation failed / permission request / user choice — show a system notification (bottom-right of the desktop) when the window is not focused.',
+  whisperImageToggle: 'Chatter images',
   whisperImageToggleHint:
-    '碎碎念时从表情包池随机抽一张，连同那句话一起显示（图片映射在配置文件顶层 memes）。token：碎碎念本来就每次生成都要调一次模型，配图只是把抽中那张的名称+描述（约 100 字符 / ≈60 token）加进同一次请求，增量可忽略。',
-  chatImageToggle: '对话配图',
+    'Attach a random meme to each chatter line, shown with the sentence (the image map is "memes" at the top level of the config). Tokens: chatter already calls the model once per line, so adding the picked image\'s name and description (about 100 characters / ~60 tokens) to the same request costs next to nothing.',
+  chatImageToggle: 'Chat images',
   chatImageToggleHint:
-    '对话时由 AI 按当前语境从表情包池挑一张配图（可不挑；图片映射在配置文件顶层 memes）。token：每条消息都要把整张清单附进请求，当前约 1.1k 字符（≈650 token，约碎碎念配图的 11 倍），并随图片数量线性增长；关掉则一个字符都不附。',
-  notifyGetPermission: '获取权限',
-  notifyPermissionOk: '已获得通知权限，右下角出现测试通知。',
-  notifyDenyUnsupported: '当前环境不支持系统通知（浏览器无 Notification API）。',
-  notifyDenyBlocked: '通知权限已被浏览器标记为「阻止」。',
-  notifyDenyRejected: '你在权限询问弹窗中选择了「阻止」。',
-  notifyDenyError: '申请权限时出错',
-  notifyGuide: '引导：点击地址栏左侧 🔒/ⓘ →「网站设置」→「通知」→ 改为「允许」，刷新页面后重试。',
-  storageTitle: '卸载与存储',
-  storageHint: '插件在本机落下的全部位置。删缓存不影响使用（会自动重下/重建）；删「插件用户数据」会丢配置与对话记忆。',
+    'During chat, the AI picks one meme from the pool for the current context (or none; the image map is "memes" at the top level of the config). Tokens: every message carries the whole list — about 1.1k characters (~650 tokens, roughly 11× chatter images), growing linearly with the number of images. Turn it off and not a single character is sent.',
+  notifyGetPermission: 'Get permission',
+  notifyPermissionOk: 'Notification permission granted; a test notification is showing in the bottom-right corner.',
+  notifyDenyUnsupported: 'System notifications are not available here (the browser has no Notification API).',
+  notifyDenyBlocked: 'Notification permission is blocked in this browser.',
+  notifyDenyRejected: 'You chose "Block" in the permission prompt.',
+  notifyDenyError: 'Error while requesting permission',
+  notifyGuide: 'How to fix: click the 🔒/ⓘ on the left of the address bar → Site settings → Notifications → Allow, then refresh and try again.',
+  storageTitle: 'Uninstall and storage',
+  storageHint: 'Every place this plugin writes to on this machine. Deleting caches is harmless (they are re-downloaded or rebuilt); deleting "plugin user data" loses your config and chat memory.',
   'storage.userData':
-    '插件用户数据：自定义配置 main-config.json、对话记忆 memory.json、自定义动画素材 main-animation/、文件宠物 pet/',
-  'storage.electron': '桌面宠物用的 Electron 运行时（体积较大；删除后下次启用桌面模式会自动重新下载）',
-  'storage.desktopCache': '桌面宠物窗口的缓存与主屏缩放缓存（可删，会自动重建）',
-  'storage.electronCache': 'Electron 安装包下载缓存（可删，需要时会重新下载）',
-  'storage.package': '插件本体（由 DSH 管理，用下面的卸载命令移除，不要手删）',
-  storageMissing: '（尚未创建）',
-  uninstallTitle: '卸载方法',
-  uninstallStep1: '1. 先退出 DSH（桌面宠物随之退出）；不要在桌宠运行时删除上面的文件。',
-  uninstallStep2: '2. 卸载插件本体（终端执行，会同时从 profile 的 bundle 层移除）：',
+    'Plugin user data: custom config main-config.json, chat memory memory.json, custom animation assets main-animation/, file-defined pets pet/',
+  'storage.electron': 'The Electron runtime used for the desktop pet (large; a deleted copy is downloaded again the next time desktop mode is enabled)',
+  'storage.desktopCache': 'Cache for the pet window and the main-screen scale (safe to delete; rebuilt automatically)',
+  'storage.electronCache': 'Electron installer download cache (safe to delete; downloaded again when needed)',
+  'storage.package': 'The plugin itself (managed by DSH — remove it with the uninstall command below, do not delete by hand)',
+  storageMissing: '(not created yet)',
+  uninstallTitle: 'How to uninstall',
+  uninstallStep1: '1. Quit DSH first (the pet exits with it); do not delete the files above while the pet is running.',
+  uninstallStep2: '2. Uninstall the plugin (run in a terminal; also removes it from the profile\'s bundle layer):',
   uninstallStep3:
-    '3. 按需删除上面的位置：缓存类删了无影响；「插件用户数据」删了会丢配置与对话记忆（想保留就先备份其中的 main-config.json）。',
+    '3. Delete the locations above as needed: caches are harmless to remove; deleting "plugin user data" loses your config and chat memory (back up main-config.json first if you want to keep it).',
   uninstallCmd: 'dsh plugin --profile {profile} remove cute-fat-fish-pet',
 };
 
@@ -286,7 +286,7 @@ export function makePetConfigSection(rt: {
       fetch('/dsh-pet-7340/config/meta')
         .then((r) => (r.ok ? r.json() : null))
         .then((p) => setPaths(p))
-        .catch(() => console.warn('[dsh-pet] 读取配置文件路径失败'));
+        .catch(() => console.warn('[dsh-pet] failed to read the config file path'));
     }, []);
 
     // 系统通知总开关（全局：读写用户级配置 main-config.json 的 notificationsEnabled；即时生效）
@@ -359,13 +359,13 @@ export function makePetConfigSection(rt: {
               ? t('notifyDenyBlocked')
               : r.reason === 'rejected'
                 ? t('notifyDenyRejected')
-                : t('notifyDenyError') + (r.message ? '：' + r.message : '');
+                : t('notifyDenyError') + (r.message ? ':' + r.message : '');
         setPermMsg({ kind: 'err', text: reason + (r.reason === 'unsupported' ? '' : ' ' + t('notifyGuide')) });
         return;
       }
       try {
         // 成功即发一条测试通知验证链路（绕过聚焦门，直接确认）
-        new Notification('测试通知', { body: '【dsh-pet】系统通知已就绪。', icon: NOTIFY_ICONS.test });
+        new Notification('Test notification', { body: '[dsh-pet] System notifications are ready.', icon: NOTIFY_ICONS.test });
       } catch {
         /* 个别环境构造失败：仍按已授权提示 */
       }
@@ -981,15 +981,15 @@ export function makePetConfigSection(rt: {
                 h('div', { style: { fontSize: '12px', lineHeight: '20px' }, children: t('configMetaHint') }),
                 h('div', {
                   style: { fontSize: '12px', lineHeight: '18px', wordBreak: 'break-all' },
-                  children: t('defaultConfig') + '：' + paths.default,
+                  children: t('defaultConfig') + ':' + paths.default,
                 }),
                 h('div', {
                   style: { fontSize: '12px', lineHeight: '18px', wordBreak: 'break-all' },
-                  children: t('userConfig') + '：' + paths.user,
+                  children: t('userConfig') + ':' + paths.user,
                 }),
                 h('div', {
                   style: { fontSize: '12px', lineHeight: '18px', wordBreak: 'break-all' },
-                  children: t('animationDir') + '：' + paths.animations,
+                  children: t('animationDir') + ':' + paths.animations,
                 }),
               ],
             })

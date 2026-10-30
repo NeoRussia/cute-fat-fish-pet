@@ -238,7 +238,7 @@ async function getWithRetry$1(url) {
 async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 	const res = await getWithRetry$1(baseUrl);
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: 余额响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed balance response");
 	const provider = String(raw.provider ?? "unknown");
 	if (raw.ok !== true) {
 		const reason = raw.reason === "unsupported" || raw.reason === "credential-missing" || raw.reason === "fetch-error" ? raw.reason : "fetch-error";
@@ -251,7 +251,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 	}
 	if (raw.kind === "opencode") {
 		const d = raw.data;
-		if (!d || typeof d !== "object") throw new Error("dsh-pet: opencode 数据非法");
+		if (!d || typeof d !== "object") throw new Error("dsh-pet: malformed opencode data");
 		const rolling = Number(d.rolling);
 		const weekly = Number(d.weekly);
 		const monthly = Number(d.monthly);
@@ -259,7 +259,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 			rolling,
 			weekly,
 			monthly
-		].every(Number.isFinite)) throw new Error("dsh-pet: opencode 百分比非数字");
+		].every(Number.isFinite)) throw new Error("dsh-pet: opencode percentage is not a number");
 		return {
 			provider,
 			kind: "opencode",
@@ -274,7 +274,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 	}
 	if (raw.kind === "deepseek") {
 		const d = raw.data;
-		if (!d || typeof d !== "object") throw new Error("dsh-pet: deepseek 数据非法");
+		if (!d || typeof d !== "object") throw new Error("dsh-pet: malformed deepseek data");
 		return {
 			provider,
 			kind: "deepseek",
@@ -285,7 +285,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 			toppedUp: typeof d.toppedUp === "string" ? d.toppedUp : void 0
 		};
 	}
-	throw new Error("dsh-pet: 余额 kind 非法");
+	throw new Error("dsh-pet: invalid balance kind");
 }
 async function fetchTriggerCount(baseUrl = "/dsh-pet-7340/balance/trigger") {
 	const res = await fetch(baseUrl, { cache: "no-store" });
@@ -316,8 +316,8 @@ const OPENCODE_QUOTA_USD = {
 };
 const WINDOW_LABELS = {
 	rolling: "5h",
-	weekly: "周",
-	monthly: "月"
+	weekly: "wk",
+	monthly: "mo"
 };
 function urgentWindow(v) {
 	if (v.kind !== "opencode") return void 0;
@@ -352,10 +352,10 @@ function resetInText(iso) {
 	const t = new Date(iso).getTime();
 	if (!Number.isFinite(t)) return "";
 	const delta = t - Date.now();
-	if (delta <= 0) return "已重置";
+	if (delta <= 0) return "Reset";
 	const hoursF = delta / 36e5;
-	if (hoursF >= 96) return (Math.round(hoursF / 24 * 10) / 10).toFixed(1) + " 天";
-	return Math.max(.1, Math.round(hoursF * 10) / 10).toFixed(1) + " 小时";
+	if (hoursF >= 96) return (Math.round(hoursF / 24 * 10) / 10).toFixed(1) + " days";
+	return Math.max(.1, Math.round(hoursF * 10) / 10).toFixed(1) + " hours";
 }
 function deepseekPricingTier(now = new Date()) {
 	const parts = new Intl.DateTimeFormat("en-US", {
@@ -378,19 +378,19 @@ function deepseekPricingTier(now = new Date()) {
 function unavailableRows(state) {
 	const rows = state.reason === "unsupported" ? [{
 		role: "error",
-		text: "当前服务商暂不支持余额查询"
+		text: "Balance lookup isn't supported for this provider yet"
 	}, {
 		role: "sub",
-		text: "当前服务商：" + state.provider
+		text: "Current provider: " + state.provider
 	}] : state.reason === "credential-missing" ? [{
 		role: "error",
-		text: "缺少余额查询凭证"
+		text: "Missing credentials for balance lookup"
 	}, {
 		role: "sub",
 		text: state.message ?? ""
 	}] : [{
 		role: "error",
-		text: "余额查询失败"
+		text: "Balance lookup failed"
 	}, {
 		role: "sub",
 		text: state.message ?? ""
@@ -405,32 +405,32 @@ function balanceBubbleView(state) {
 				const reset = resetInText(w.resetsAt);
 				const rows = [{
 					role: "label",
-					text: w.label + "额度已用 " + Math.round(w.percent) + "%"
+					text: w.label + "Used " + Math.round(w.percent) + "%"
 				}, {
 					role: "sub",
-					text: reset ? reset + "重置" : "已重置"
+					text: reset ? reset + "Reset" : "Reset"
 				}];
 				return rows;
 			}
 			return [{
 				role: "label",
-				text: "额度数据不可用"
+				text: "Quota data unavailable"
 			}];
 		}
 		const tier = deepseekPricingTier();
 		return [
 			{
 				role: "label",
-				text: "余额（"
+				text: "Balance ("
 			},
 			{
 				role: "tier",
 				tier,
-				text: tier === "peak" ? "峰" : "谷"
+				text: tier === "peak" ? "Peak" : "Off-peak"
 			},
 			{
 				role: "label",
-				text: "）¥" + (state.total ?? "-")
+				text: ") ¥" + (state.total ?? "-")
 			}
 		];
 	}
@@ -470,7 +470,7 @@ async function getWithRetry(url) {
 async function fetchWhisperState(baseUrl = "/dsh-pet-7340/whisper") {
 	const res = await getWithRetry(baseUrl);
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: 碎碎念响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed chatter response");
 	if (raw.ok !== true) return {
 		ok: false,
 		reason: raw.reason === "provider-missing" ? "provider-missing" : "generate-error",
@@ -478,7 +478,7 @@ async function fetchWhisperState(baseUrl = "/dsh-pet-7340/whisper") {
 	};
 	const text = typeof raw.text === "string" ? raw.text.trim() : "";
 	const ts = Number(raw.ts);
-	if (!text || !Number.isFinite(ts)) throw new Error("dsh-pet: 碎碎念数据非法");
+	if (!text || !Number.isFinite(ts)) throw new Error("dsh-pet: malformed chatter data");
 	const image = typeof raw.image === "string" && raw.image.trim() ? raw.image.trim() : void 0;
 	return image ? {
 		ok: true,
@@ -533,7 +533,7 @@ function whisperBubbleView(state) {
 		role: "label",
 		text: state.text
 	}];
-	const msg = state.reason === "provider-missing" ? "当前对话未配置模型，碎碎念不可用" : "碎碎念生成失败" + (state.message ? "：" + state.message : "");
+	const msg = state.reason === "provider-missing" ? "No model configured for this conversation; chatter unavailable" : "Chatter generation failed" + (state.message ? ":" + state.message : "");
 	return [{
 		role: "label",
 		text: msg
@@ -589,18 +589,18 @@ function frameToToast(frame) {
 			if (ev.type !== "turn/end") return null;
 			const kind = ev.data?.reason?.kind;
 			if (kind === "completed") return {
-				title: "对话完成",
+				title: "Chat finished",
 				body: "",
 				icon: NOTIFY_ICONS.done
 			};
 			if (kind === "error") return {
-				title: "生成失败",
+				title: "Generation failed",
 				body: ev.data?.reason?.error?.message ?? "",
 				icon: NOTIFY_ICONS.error
 			};
 			if (kind === "max-tokens") return {
-				title: "输出被截断",
-				body: "已达到输出 token 上限",
+				title: "Output truncated",
+				body: "Reached the output token limit",
 				icon: NOTIFY_ICONS.truncated
 			};
 			return null;
@@ -609,21 +609,21 @@ function frameToToast(frame) {
 			const toolName = typeof frame.toolName === "string" ? frame.toolName : "";
 			const reason = typeof frame.reason === "string" && frame.reason ? frame.reason : "";
 			return {
-				title: "正在申请权限",
-				body: (toolName ? "工具「" + toolName + "」" : "") + (reason ? "：" + reason : ""),
+				title: "Requesting permission",
+				body: (toolName ? "Tool \"" + toolName + "\"" : "") + (reason ? ":" + reason : ""),
 				icon: NOTIFY_ICONS.approval
 			};
 		}
 		case "question/requested": {
 			const q = Array.isArray(frame.questions) && frame.questions[0]?.question || "";
 			return {
-				title: "模型在等你回答",
+				title: "The model is waiting for your answer",
 				body: q,
 				icon: NOTIFY_ICONS.question
 			};
 		}
 		case "host/agent-error": return {
-			title: "生成失败",
+			title: "Generation failed",
 			body: typeof frame.message === "string" ? frame.message : "",
 			icon: NOTIFY_ICONS.error
 		};
@@ -635,9 +635,9 @@ function frameToToast(frame) {
 //#region src/shared/menu.ts
 /** 事件名 → 分类标签（无映射时用事件名本身） */
 const EVENT_LABELS = {
-	balance: "余额档位",
-	whisper: "碎碎念",
-	workStatus: "工作状态"
+	balance: "Balance tiers",
+	whisper: "Chatter",
+	workStatus: "Work status"
 };
 const leaf = (anim) => ({
 	label: anim,
@@ -646,11 +646,11 @@ const leaf = (anim) => ({
 function buildMenuTree(animations) {
 	const groups = [];
 	const pools = [
-		["待机", animations.idle],
-		["转向", animations.turn],
-		["拖拽", animations.drag],
-		["点击回应", animations.clicks],
-		["移动", animations.moves.actions.map((m) => m.name)]
+		["Idle", animations.idle],
+		["Turning", animations.turn],
+		["Drag", animations.drag],
+		["Click reactions", animations.clicks],
+		["Movement", animations.moves.actions.map((m) => m.name)]
 	];
 	for (const [label, pool] of pools) if (pool.length) groups.push({
 		label,
@@ -674,7 +674,7 @@ function buildMenuTree(animations) {
 	}
 	if (!groups.length) return [];
 	return [{
-		label: "动作",
+		label: "Actions",
 		children: groups
 	}];
 }
@@ -854,7 +854,7 @@ async function sendChat(baseUrl, text) {
 		signal: AbortSignal.timeout(SEND_TIMEOUT_MS)
 	});
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: 对话响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed chat response");
 	const o = raw;
 	if (o.ok !== true) return {
 		ok: false,
@@ -862,7 +862,7 @@ async function sendChat(baseUrl, text) {
 		message: typeof o.message === "string" ? o.message : void 0
 	};
 	const reply = typeof o.reply === "string" ? o.reply.trim() : "";
-	if (!reply) throw new Error("dsh-pet: 对话回复非法");
+	if (!reply) throw new Error("dsh-pet: malformed chat reply");
 	const image = typeof o.image === "string" && o.image.trim() ? o.image.trim() : void 0;
 	return image ? {
 		ok: true,
@@ -879,7 +879,7 @@ const CHAT_CSS = [
 	".dsh-pet-chat{position:fixed;z-index:2147483001;width:160px;max-width:80vw;",
 	"background:rgba(255,255,255,.98);border:1px solid rgba(0,0,0,.12);border-radius:10px;",
 	"box-shadow:0 10px 32px rgba(0,0,0,.22);color:#2b2b2b;font-size:14px;line-height:1.5;",
-	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','幼圆','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
+	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
 	"user-select:none}",
 	".dsh-pet-chat *{box-sizing:border-box}",
 	".dsh-pet-chat-input{display:block;width:100%;border:none;outline:none;background:transparent;",
@@ -919,7 +919,7 @@ function mountChatDialog(opts) {
 	root.className = "dsh-pet-chat";
 	const input = document.createElement("textarea");
 	input.className = "dsh-pet-chat-input";
-	input.placeholder = "说点什么…";
+	input.placeholder = "Say something…";
 	input.maxLength = 2e3;
 	input.rows = 1;
 	let measureCtx = null;
@@ -974,22 +974,22 @@ function mountChatDialog(opts) {
 		if (!text) return;
 		sending = true;
 		input.disabled = true;
-		if (onSend) { try { onSend(text); } catch (e) { console.warn("[dsh-pet] onSend 回调异常", e); } }
+		if (onSend) { try { onSend(text); } catch (e) { console.warn("[dsh-pet] onSend callback error", e); } }
 		sendChat(withPet, text).then((state) => {
 			if (state.ok) {
 				close();
 				if (onReply) onReply(state.reply, state.image);
 			} else {
-				err.textContent = "对话失败：" + (state.message ?? state.reason);
+				err.textContent = "Chat failed: " + (state.message ?? state.reason);
 				err.style.display = "block";
 				// [发布版补丁 A2b] 失败一定要通知桌宠：① 弹窗被关掉时红字写在已移除的节点上，主人什么都看不到；
 				//  ② 不管弹窗开没开，都得清掉「等回复」标记，否则她会整整两分钟不再开口（要等 2 分钟兜底到期）。
-				if (onError) { try { onError(state.message ?? state.reason, state); } catch (e2) { console.warn("[dsh-pet] onError 回调异常", e2); } }
+				if (onError) { try { onError(state.message ?? state.reason, state); } catch (e2) { console.warn("[dsh-pet] onError callback error", e2); } }
 			}
 		}).catch((e) => {
-			err.textContent = "对话异常：" + String(e && e.message ? e.message : e);
+			err.textContent = "Chat error: " + String(e && e.message ? e.message : e);
 			err.style.display = "block";
-			if (onError) { try { onError(String(e && e.message ? e.message : e), null); } catch (e3) { console.warn("[dsh-pet] onError 回调异常", e3); } }
+			if (onError) { try { onError(String(e && e.message ? e.message : e), null); } catch (e3) { console.warn("[dsh-pet] onError callback error", e3); } }
 		}).finally(() => {
 			sending = false;
 			input.disabled = false;
@@ -1312,7 +1312,7 @@ const SCORE_POPUP_CSS = [
 	".dsh-pet-score{position:fixed;z-index:2147483002;min-width:120px;text-align:center;",
 	"background:rgba(255,255,255,.97);border:1px solid rgba(255,179,0,.35);border-radius:12px;",
 	"box-shadow:0 10px 32px rgba(0,0,0,.22);padding:8px 16px 9px;user-select:none;pointer-events:auto;",
-	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','幼圆','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;}",
+	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;}",
 	".dsh-pet-score.is-in{animation:dshPetScorePop .28s ease}",
 	".dsh-pet-score-val{font-size:22px;line-height:1.25;font-weight:700;color:#ff8f00;font-variant-numeric:tabular-nums}",
 	".dsh-pet-score-sub{font-size:11px;line-height:1.4;color:rgba(43,43,43,.6);margin-top:2px;white-space:nowrap}",
@@ -1408,7 +1408,7 @@ function mountScorePopup(opts) {
 	val.textContent = "+" + opts.score;
 	const sub = document.createElement("div");
 	sub.className = "dsh-pet-score-sub";
-	sub.textContent = "速度 " + Math.round(opts.speed) + " · 大小 " + Math.round(opts.size);
+	sub.textContent = "Speed " + Math.round(opts.speed) + " · Size " + Math.round(opts.size);
 	root.appendChild(val);
 	root.appendChild(sub);
 	document.body.appendChild(root);
@@ -1476,7 +1476,7 @@ async function fetchWorkStatus(baseUrl = "/dsh-pet-7340/work-status") {
 	const res = await fetch(baseUrl, { signal: AbortSignal.timeout(TIMEOUT_MS) });
 	if (!res.ok) throw new Error("dsh-pet: work-status HTTP " + res.status);
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: work-status 响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed work-status response");
 	const state = raw.state === null || WORK_STATUS_STATES.includes(raw.state) ? raw.state : null;
 	return {
 		state,

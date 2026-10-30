@@ -37,10 +37,10 @@ try {
   electronApi = require('electron');
 } catch (error) {
   process.stderr.write(
-    '[dsh-pet helper] 启动失败：本进程被以「纯 Node 模式」拉起（ELECTRON_RUN_AS_NODE=' +
+    '[dsh-pet helper] startup failed: this process was launched in "plain Node mode" (ELECTRON_RUN_AS_NODE=' +
       JSON.stringify(process.env.ELECTRON_RUN_AS_NODE ?? null) +
-      '）。该变量必须在 spawn 前删除（见 src/host/helper-process.ts 的 helperSpawnEnv），' +
-      '运行期再删无效，设成空串会让 Electron 直接 abort。原始错误：' +
+      '). That variable must be deleted before spawn (see helperSpawnEnv in src/host/helper-process.ts),' +
+      'deleting it at runtime has no effect, and setting it to an empty string makes Electron abort. Original error:' +
       (error instanceof Error ? error.message.split('\n')[0] : String(error)) +
       '\n',
   );
@@ -716,7 +716,7 @@ function startControlBridge() {
       fsSync.writeFileSync(statePath, JSON.stringify({ port: CONTROL_PORT_BASE, pid: process.pid, at: Date.now(), token }, null, 2), { mode: 0o600 });
     } catch (e) {
       // 写不进去就等于控制台读不到 token：宁可让这条口子不可用，也绝不放行无凭据的写。
-      console.error('[dsh-pet-desktop-helper] control bridge: 密钥写不进 ' + statePath + ': ' + String(e && e.message ? e.message : e));
+      console.error('[dsh-pet-desktop-helper] control bridge: key could not be written to ' + statePath + ': ' + String(e && e.message ? e.message : e));
     }
     return token;
   };
@@ -745,7 +745,7 @@ function startControlBridge() {
     }
     if (!tokenOk(tokenFrom(req))) {
       // 到此为止：不写 localStorage、不 reload。
-      send(res, 401, { ok: false, reason: 'unauthorized', message: '缺少或错误的控制密钥：读 ' + statePath + ' 里的 token，用 Authorization: Bearer <token> 或 X-Pet-Token 带上' }, origin);
+      send(res, 401, { ok: false, reason: 'unauthorized', message: 'missing or wrong control key: read the token from ' + statePath + ' and send it as Authorization: Bearer <token> or X-Pet-Token' }, origin);
       return false;
     }
     return true;
@@ -758,7 +758,7 @@ function startControlBridge() {
       const origin = String(req.headers.origin || '');
       // CORS 在路由之前判：恶意来源的写请求不该先落盘、再指望浏览器去拦响应。
       if (!corsOk(origin)) {
-        return void send(res, 403, { ok: false, reason: 'forbidden-origin', message: '不认识的来源：控制桥只服务控制台与本机回环页面' }, origin);
+        return void send(res, 403, { ok: false, reason: 'forbidden-origin', message: 'unknown origin: the control bridge only serves the console and local loopback pages' }, origin);
       }
       try {
         const u = new URL(req.url, 'http://127.0.0.1');
@@ -796,7 +796,7 @@ function startControlBridge() {
   const tryListen = (port, left) => {
     server.once('error', () => {
       if (left > 0) setTimeout(() => tryListen(port + 1, left - 1), 60);
-      else console.error('[dsh-pet-desktop-helper] control bridge: 端口都被占了，控制台改不了权限/语音');
+      else console.error('[dsh-pet-desktop-helper] control bridge: all ports are taken, the console can\'t change permissions/voice');
     });
     server.listen(port, '127.0.0.1', () => {
       try {
@@ -1170,38 +1170,38 @@ function listAppShortcuts() {
  * 泛词策略：first = 按候选顺序取本机真有的第一个；ask = 同类有多个就 ambiguous —— 她只问、绝不猜。
  * 安全红线：卸载类名字（目标里带"卸载"，或命中的快捷方式本身是卸载器）永远不 openPath，
  * 一律 ambiguous 只列候选。aliases.json 是主人手写的名字映射，**只读**（不存在＝正常）。 */
-const APP_GAME_HINTS = ['Left 4 Dead 2', 'World War Z', 'Project Zomboid', 'Dust Front RTS Demo', '三角洲行动', '地下城与勇士', '战双帕弥什', '喋血复仇', '英雄联盟', '架空地图模拟器', '上行战场'];
+const APP_GAME_HINTS = ['Left 4 Dead 2', 'World War Z', 'Project Zomboid', 'Dust Front RTS Demo', 'Delta Force', 'Dungeon Fighter Online', 'Punishing: Gray Raven', 'Back 4 Blood', 'League of Legends', 'Fictional Map Simulator', 'The Ascent'];
 const APP_GENERIC = [
-  { keys: ['浏览器'], policy: 'first', cands: ['Microsoft Edge', 'Google Chrome', '夸克'] },
-  { keys: ['音乐', '听歌'], policy: 'first', cands: ['酷狗音乐', 'QQ音乐', '网易云音乐'] },
-  { keys: ['加速器'], policy: 'first', cands: ['UU加速器', '雷神加速器', '暴喵AI管家'] },
-  { keys: ['蒸汽', '游戏平台'], policy: 'first', cands: ['Steam', 'WeGame'] },
-  { keys: ['终端', '命令行'], policy: 'first', cands: ['Windows Terminal', 'Command Prompt', 'Windows PowerShell'] },
-  { keys: ['文件管理器', '资源管理器', '我的电脑'], policy: 'first', cands: ['File Explorer'] },
-  { keys: ['任务管理器'], policy: 'first', cands: ['Task Manager'] },
-  { keys: ['控制面板', '设置'], policy: 'first', cands: ['Control Panel'] },
-  { keys: ['注册表'], policy: 'first', cands: ['Registry Editor'] },
-  { keys: ['画图'], policy: 'first', cands: ['Paint'] },
-  { keys: ['记事本'], policy: 'first', cands: ['Notepad'] },
-  { keys: ['计算器'], policy: 'first', cands: ['Calculator'] },
-  { keys: ['网盘'], policy: 'ask', cands: ['百度网盘', '夸克网盘'] },
-  { keys: ['游戏'], policy: 'ask', cands: APP_GAME_HINTS },
-  { keys: ['卸载'], policy: 'ask', never: true, cands: [] },
+  { keys: ['Browser'], policy: 'first', cands: ['Microsoft Edge', 'Google Chrome', 'Quark'] },
+  { keys: ['Music', 'Music'], policy: 'first', cands: ['Kugou Music', 'QQ Music', 'NetEase Cloud Music'] },
+  { keys: ['Accelerator'], policy: 'first', cands: ['UU Booster', 'Leishen Booster', 'Baomiao AI'] },
+  { keys: ['Steam', 'Game platform'], policy: 'first', cands: ['Steam', 'WeGame'] },
+  { keys: ['Terminal', 'Command line'], policy: 'first', cands: ['Windows Terminal', 'Command Prompt', 'Windows PowerShell'] },
+  { keys: ['File Manager', 'File Explorer', 'My Computer'], policy: 'first', cands: ['File Explorer'] },
+  { keys: ['Task Manager'], policy: 'first', cands: ['Task Manager'] },
+  { keys: ['Control Panel', 'Settings'], policy: 'first', cands: ['Control Panel'] },
+  { keys: ['Registry'], policy: 'first', cands: ['Registry Editor'] },
+  { keys: ['Paint'], policy: 'first', cands: ['Paint'] },
+  { keys: ['Notepad'], policy: 'first', cands: ['Notepad'] },
+  { keys: ['Calculator'], policy: 'first', cands: ['Calculator'] },
+  { keys: ['Cloud drive'], policy: 'ask', cands: ['Baidu Netdisk', 'Quark Drive'] },
+  { keys: ['Games'], policy: 'ask', cands: APP_GAME_HINTS },
+  { keys: ['Uninstall'], policy: 'ask', never: true, cands: [] },
 ];
 const APP_CN_MAP = {
-  '求生之路2': 'Left 4 Dead 2',
-  '求生之路': 'Left 4 Dead 2',
-  '左死的2': 'Left 4 Dead 2',
-  '僵尸世界大战': 'World War Z',
-  '僵尸毁灭工程': 'Project Zomboid',
-  '壁纸引擎': 'Wallpaper Engine：壁纸引擎',
-  '尘封前线': 'Dust Front RTS Demo',
-  '上行战场': '上行战场  The Ascent',
-  '谷歌浏览器': 'Google Chrome',
-  'Edge浏览器': 'Microsoft Edge',
-  '微软浏览器': 'Microsoft Edge',
-  'OBS工作室': 'OBS Studio',
-  '命令行提示符': 'Command Prompt',
+  'Left 4 Dead 2': 'Left 4 Dead 2',
+  'Left 4 Dead': 'Left 4 Dead 2',
+  'Left 4 Dead 2': 'Left 4 Dead 2',
+  'World War Z': 'World War Z',
+  'Project Zomboid': 'Project Zomboid',
+  'Wallpaper Engine': 'Wallpaper Engine',
+  'Dust Front': 'Dust Front RTS Demo',
+  'The Ascent': 'The Ascent',
+  'Chrome': 'Google Chrome',
+  'Edge browser': 'Microsoft Edge',
+  'Edge': 'Microsoft Edge',
+  'OBS Studio': 'OBS Studio',
+  'Command Prompt': 'Command Prompt',
 };
 const APP_ALIAS_CACHE = { key: '', map: null };
 function appNorm(s) {
@@ -1210,7 +1210,7 @@ function appNorm(s) {
 function appIsUninstall(s) {
   const t = String(s == null ? '' : s);
   if (!t) return false;
-  if (t.indexOf('卸载') >= 0) return true;
+  if (t.indexOf('Uninstall') >= 0) return true;
   return /\buninstall/i.test(t);
 }
 /* 原有四条规则（保持既有行为）：全名精确 → 去空白小写相等 → 名字含关键字 → 关键字含名字 */
@@ -1400,14 +1400,14 @@ function resolveAppTarget(target, list, aliases) {
  * 全程只 shell.openPath，绝不删除 / 移动 / 改名 / 写文件（与 pc-ipc 的安全口径一致）。 */
 const FOLDER_TOKENS = ['downloads', 'documents', 'pictures', 'music', 'videos', 'desktop', 'home', 'temp'];
 const FOLDER_TOKEN_LABEL = {
-  downloads: '下载',
-  documents: '文档',
-  pictures: '图片',
-  music: '音乐',
-  videos: '视频',
-  desktop: '桌面',
-  home: '主目录',
-  temp: '临时文件夹',
+  downloads: 'Downloads',
+  documents: 'Documents',
+  pictures: 'Pictures',
+  music: 'Music',
+  videos: 'Videos',
+  desktop: 'Desktop',
+  home: 'Home',
+  temp: 'Temp',
 };
 function localSearchRoots() {
   const out = [];
@@ -1541,13 +1541,13 @@ ipcMain.handle('pet:rec-start', async () => {
   try {
     const r = await obsCtl.start();
     if (r && r.ok === true) {
-      obsLog('起录成功 already=' + !!r.already + ' 拉了OBS=' + !!r.startedObs + ' OBS起来用了' + (r.obsStartMs || 0) + 'ms 试了' + (r.tries || 1) + '次');
+      obsLog('recording started already=' + !!r.already + ' started OBS=' + !!r.startedObs + ' OBS start took' + (r.obsStartMs || 0) + 'ms, tried' + (r.tries || 1) + 'times');
       return { ok: true, already: !!r.already, startedObs: !!r.startedObs, obsStartMs: r.obsStartMs || 0 };
     }
-    obsLog('起录失败：' + ((r && r.error) || 'unknown'));
+    obsLog('Failed to start recording:' + ((r && r.error) || 'unknown'));
     return { ok: false, error: String((r && r.error) || 'rec-start-failed'), startedObs: !!(r && r.startedObs) };
   } catch (e) {
-    obsLog('起录异常：' + ((e && e.message) || e));
+    obsLog('Recording error:' + ((e && e.message) || e));
     return { ok: false, error: String((e && e.message) || e) };
   }
 });
@@ -1556,13 +1556,13 @@ ipcMain.handle('pet:rec-stop', async () => {
   try {
     const r = await obsCtl.stop();
     if (r && r.ok === true) {
-      obsLog('停录成功 already=' + !!r.already + ' 文件=' + (r.path || '(没返回路径)'));
+      obsLog('recording stopped already=' + !!r.already + ' file=' + (r.path || '(no path returned)'));
       return { ok: true, already: !!r.already, path: String(r.path || '') };
     }
-    obsLog('停录失败：' + ((r && r.error) || 'unknown'));
+    obsLog('Failed to stop recording:' + ((r && r.error) || 'unknown'));
     return { ok: false, error: String((r && r.error) || 'rec-stop-failed') };
   } catch (e) {
-    obsLog('停录异常：' + ((e && e.message) || e));
+    obsLog('Stop error:' + ((e && e.message) || e));
     return { ok: false, error: String((e && e.message) || e) };
   }
 });
@@ -1653,7 +1653,7 @@ function voiceBindPermission() {
     });
     ses.setPermissionCheckHandler((wc, permission) => permission === 'media' && VOICE.on);
   } catch (e) {
-    console.error('[dsh-pet] 语音权限门控注册失败：' + String((e && e.message) || e));
+    console.error('[dsh-pet] voice permission gate registration failed:' + String((e && e.message) || e));
   }
 }
 
@@ -1719,7 +1719,7 @@ function voiceStartWorker() {
     // 交给渲染端的是**稳定错误码**（no-node-runtime，渲染端按它给提示），但 stderr 上必须把
     // 「找了哪些地方」说清楚：只报一句「语音不能用」时，用户/售后根本不知道缺的是哪个文件。
     console.error(
-      '[dsh-pet helper] 找不到可用的 node.exe：语音识别要它来跑包内 stt-worker（Electron 自身加载不了该原生 addon）。已尝试的候选：\n  ' +
+      '[dsh-pet helper] no usable node.exe found: speech recognition needs it to run the bundled stt-worker (Electron itself can\'t load that native addon). Candidates tried:\n  ' +
         voiceCandidateNodes().join('\n  '),
     );
     throw new Error('no-node-runtime');
@@ -1793,7 +1793,7 @@ function voiceRequest(wav, timeoutMs, lang) {
     }, timeoutMs || 10000);
     VOICE.pending.set(id, { timer, resolve, reject: (e) => reject(e instanceof Error ? e : new Error(String(e))) });
     try {
-      proc.stdin.write(JSON.stringify({ id, cmd: 'transcribe', wav, lang: lang === 'auto' ? 'auto' : 'zh' }) + '\n');
+      proc.stdin.write(JSON.stringify({ id, cmd: 'transcribe', wav, lang: lang === 'auto' ? 'auto' : 'en' }) + '\n');
     } catch (e) {
       clearTimeout(timer);
       VOICE.pending.delete(id);
@@ -1814,7 +1814,7 @@ function voiceToSamples(pcm) {
 async function voiceTranscribePcm(pcm, lang) {
   const fs = require('node:fs');
   const samples = voiceToSamples(pcm);
-  const want = lang === 'auto' ? 'auto' : 'zh'; // 只认这两个值，别的当 zh（不给渲染端传任意字符串的机会）
+  const want = lang === 'auto' ? 'auto' : 'en'; // 只认这两个值，别的当 zh（不给渲染端传任意字符串的机会）
   if (!samples.length) return { ok: false, error: 'empty-audio' };
   const file = voiceTempFile();
   try {
@@ -1869,7 +1869,7 @@ function voiceLogClean(raw) {
   const gain = num(src.gain);
   return {
     ts: Number.isFinite(ts) && ts > 0 ? Math.round(ts) : Date.now(),
-    device: str(src.device, 40) || '默认麦克风',
+    device: str(src.device, 40) || 'Default microphone',
     rms: num(src.rms),
     voicedMs: Math.round(num(src.voicedMs)),
     // v6：Silero VAD 判出的"真语音"毫秒数（0 = 一句人声都没有）。**没给就是 null**，不能补成 0：
@@ -2012,8 +2012,8 @@ const TTS_HEADERS = {
 };
 // 音色白名单（菜单只放 6 个中文音色，这里按 SPEC 收全 8 个：渲染端给别的值一律回落默认）
 const TTS_VOICES = [
-  'zh-CN-XiaoyiNeural', 'zh-CN-XiaoxiaoNeural', 'zh-CN-YunxiNeural', 'zh-CN-YunxiaNeural',
-  'zh-CN-YunyangNeural', 'zh-CN-YunjianNeural', 'zh-CN-liaoning-XiaobeiNeural', 'zh-CN-shaanxi-XiaoniNeural',
+  'en-US-AvaNeural', 'en-US-JennyNeural', 'en-US-AriaNeural', 'en-US-GuyNeural',
+  'en-US-EmmaNeural', 'en-GB-SoniaNeural', 'en-AU-NatashaNeural', 'en-CA-ClaraNeural',
 ];
 
 /** 与 edge-tts（python）逐位一致：ticks 乘 1e7 后超过 2^53，float64 会把尾数舍入，
@@ -2050,7 +2050,7 @@ function ttsPitchFromConfig() {
 }
 
 function ttsBuildSsml(text, voice, rate, pitch) {
-  return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'>" +
+  return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>" +
     "<voice name='" + voice + "'><prosody pitch='" + (pitch || '+0Hz') + "' rate='" + rate + "' volume='+0%'>" +
     ttsSsmlEscape(text) + '</prosody></voice></speak>';
 }
@@ -2086,7 +2086,7 @@ function ttsConnect(rawUrl, extraHeaders, handlers) {
   };
 
   sock.on('error', (e) => finish(e));
-  sock.on('close', () => finish(new Error('连接被关闭')));
+  sock.on('close', () => finish(new Error('Connection closed')));
   sock.on('connect', () => {
     const lines = [
       'GET ' + u.pathname + u.search + ' HTTP/1.1',
@@ -2107,10 +2107,10 @@ function ttsConnect(rawUrl, extraHeaders, handlers) {
       const head = buf.subarray(0, idx).toString('latin1');
       buf = buf.subarray(idx + 4);
       const status = Number((head.match(/^HTTP\/1\.1 (\d+)/) || [])[1]);
-      if (status !== 101) return finish(new Error('TTS 握手失败 HTTP ' + status + ': ' + head.split('\r\n')[0]));
+      if (status !== 101) return finish(new Error('TTS handshake failed HTTP ' + status + ': ' + head.split('\r\n')[0]));
       const acc = (head.match(/sec-websocket-accept:\s*(\S+)/i) || [])[1];
       const want = TTS_CRYPTO.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
-      if (acc !== want) return finish(new Error('TTS 握手校验不通过'));
+      if (acc !== want) return finish(new Error('TTS handshake check failed'));
       handshaked = true;
       emit('open');
     }
@@ -2120,14 +2120,14 @@ function ttsConnect(rawUrl, extraHeaders, handlers) {
       const fin = (b0 & 0x80) !== 0, op = b0 & 0x0f, masked = (b1 & 0x80) !== 0;
       let len = b1 & 0x7f, off = 2;
       if (len === 126) { if (buf.length < 4) return; len = buf.readUInt16BE(2); off = 4; }
-      else if (len === 127) { if (buf.length < 10) return; const big = buf.readBigUInt64BE(2); if (big > (1n << 40n)) return finish(new Error('TTS 帧过大')); len = Number(big); off = 10; }
+      else if (len === 127) { if (buf.length < 10) return; const big = buf.readBigUInt64BE(2); if (big > (1n << 40n)) return finish(new Error('TTS frame too large')); len = Number(big); off = 10; }
       let mask;
       if (masked) { if (buf.length < off + 4) return; mask = buf.subarray(off, off + 4); off += 4; }
       if (buf.length < off + len) return;
       let payload = buf.subarray(off, off + len);
       buf = buf.subarray(off + len);
       if (masked) { const p = Buffer.from(payload); for (let i = 0; i < p.length; i++) p[i] ^= mask[i & 3]; payload = p; }
-      if (op === 0x8) { const code = payload.length >= 2 ? payload.readUInt16BE(0) : 1005; const reason = payload.subarray(2).toString('utf8'); finish(new Error('TTS 连接关闭 code=' + code + (reason ? ' reason=' + reason : ''))); return; }
+      if (op === 0x8) { const code = payload.length >= 2 ? payload.readUInt16BE(0) : 1005; const reason = payload.subarray(2).toString('utf8'); finish(new Error('TTS connection closed code=' + code + (reason ? ' reason=' + reason : ''))); return; }
       if (op === 0x9) { sendFrame(0xA, payload); continue; }
       if (op === 0xA) continue;
       if (op === 0x0) { fragParts.push(payload); }
@@ -2171,7 +2171,7 @@ function ttsSynthesizeOn(url, text, voice, rate, timeoutMs, opts, onOpen) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let settled = false, lastText = '', sockRef = null;
-    const timer = setTimeout(() => fail(new Error('TTS 超时 ' + timeoutMs + 'ms')), timeoutMs);
+    const timer = setTimeout(() => fail(new Error('TTS timed out ' + timeoutMs + 'ms')), timeoutMs);
     function fail(err) {
       if (settled) return;
       settled = true;
@@ -2186,7 +2186,7 @@ function ttsSynthesizeOn(url, text, voice, rate, timeoutMs, opts, onOpen) {
       clearTimeout(timer);
       if (sockRef) TTS_LIVE.delete(sockRef);
       try { ws.close(); } catch (e) { /* 已经关了 */ }
-      if (!chunks.length) return reject(new Error('TTS 没有返回音频'));
+      if (!chunks.length) return reject(new Error('TTS returned no audio'));
       resolve(Buffer.concat(chunks));
     }
     const ws = ttsConnect(url, TTS_HEADERS, {
@@ -2212,10 +2212,10 @@ function ttsSynthesizeOn(url, text, voice, rate, timeoutMs, opts, onOpen) {
 
 async function ttsSynthesize(opts) {
   const text = String((opts && opts.text) || '').trim();
-  const voice = (opts && opts.voice) || 'zh-CN-XiaoyiNeural';
+  const voice = (opts && opts.voice) || 'en-US-AvaNeural';
   const rate = (opts && opts.rate) || '+0%';
   const timeoutMs = (opts && opts.timeoutMs) || 15000;
-  if (!text) return Promise.reject(new Error('TTS 文本为空'));
+  if (!text) return Promise.reject(new Error('TTS text is empty'));
   const endpoints = ttsSynthesisUrls(opts && opts.nowMs);
   const errors = [];
   for (let i = 0; i < endpoints.length; i++) {
@@ -2229,7 +2229,7 @@ async function ttsSynthesize(opts) {
       if (opened) throw e;
     }
   }
-  throw new Error('TTS 所有端点都失败：' + errors.join(' ｜ '));
+  throw new Error('All TTS endpoints failed:' + errors.join(' | '));
 }
 
 let TTS_INFLIGHT = 0;       // 正在合成的句数
@@ -2242,9 +2242,9 @@ ipcMain.handle('pet:tts-speak', async (event, payload) => {
   const text = raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
   if (!text) return { ok: false, error: 'empty-text' };
   if (text.length > TTS_MAX_TEXT) return { ok: false, error: 'text-too-long' };
-  const voice = typeof p.voice === 'string' && TTS_VOICES.indexOf(p.voice) >= 0 ? p.voice : 'zh-CN-XiaoyiNeural';
+  const voice = typeof p.voice === 'string' && TTS_VOICES.indexOf(p.voice) >= 0 ? p.voice : 'en-US-AvaNeural';
   const rate = typeof p.rate === 'string' && /^[+-]\d{1,3}%$/.test(p.rate) ? p.rate : '+0%';
-  if (TTS_INFLIGHT >= TTS_MAX_INFLIGHT) return { ok: false, error: 'busy（已经有 2 句在合成）' };
+  if (TTS_INFLIGHT >= TTS_MAX_INFLIGHT) return { ok: false, error: 'busy (2 sentences already being synthesised)' };
   const t0 = Date.now();
   TTS_INFLIGHT++;
   try {
@@ -2273,14 +2273,14 @@ ipcMain.handle('pet:tts-speak', async (event, payload) => {
 // [发布版补丁 P3] 原来写死成一个固定的家目录路径（清缓存只清数据根，别碰别人的东西）
 const CACHE_PET_DIR = path.join(process.env.DSH_HOME || path.join(require('node:os').homedir(), '.dsh'), 'dsh-pet');
 const CACHE_FIXED = [
-  { rel: ['screen-watch', 'shot.jpg'], what: '截屏' },
-  { rel: ['screen-watch', 'voice-log.json'], what: '语音日志' },
-  { rel: ['screen-watch', 'voice-selftest.wav'], what: '自检录音' },
+  { rel: ['screen-watch', 'shot.jpg'], what: 'Screenshot' },
+  { rel: ['screen-watch', 'voice-log.json'], what: 'Voice log' },
+  { rel: ['screen-watch', 'voice-selftest.wav'], what: 'Self-test recording' },
 ];
 // %TEMP% 里只认这两类前缀 + 后缀（都是我们自己的产物；%TEMP% 里别的文件一个都不动）
 const CACHE_TMP_OK = [
-  { prefix: 'dsh-pet-voice-', suffix: '.wav', what: '临时录音' },
-  { prefix: 'dsh-pet-smoke', suffix: '.png', what: '冒烟截图' },
+  { prefix: 'dsh-pet-voice-', suffix: '.wav', what: 'Temporary recording' },
+  { prefix: 'dsh-pet-smoke', suffix: '.png', what: 'Smoke screenshot' },
 ];
 const CACHE_BROWSER_DIRS = ['Cache', 'Code Cache', 'GPUCache', 'DawnGraphiteCache', 'DawnWebGPUCache'];
 

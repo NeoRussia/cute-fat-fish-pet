@@ -143,7 +143,7 @@ async function getWithRetry$1(url) {
 async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 	const res = await getWithRetry$1(baseUrl);
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: 余额响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed balance response");
 	const provider = String(raw.provider ?? "unknown");
 	if (raw.ok !== true) {
 		const reason = raw.reason === "unsupported" || raw.reason === "credential-missing" || raw.reason === "fetch-error" ? raw.reason : "fetch-error";
@@ -156,7 +156,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 	}
 	if (raw.kind === "opencode") {
 		const d = raw.data;
-		if (!d || typeof d !== "object") throw new Error("dsh-pet: opencode 数据非法");
+		if (!d || typeof d !== "object") throw new Error("dsh-pet: malformed opencode data");
 		const rolling = Number(d.rolling);
 		const weekly = Number(d.weekly);
 		const monthly = Number(d.monthly);
@@ -164,7 +164,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 			rolling,
 			weekly,
 			monthly
-		].every(Number.isFinite)) throw new Error("dsh-pet: opencode 百分比非数字");
+		].every(Number.isFinite)) throw new Error("dsh-pet: opencode percentage is not a number");
 		return {
 			provider,
 			kind: "opencode",
@@ -179,7 +179,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 	}
 	if (raw.kind === "deepseek") {
 		const d = raw.data;
-		if (!d || typeof d !== "object") throw new Error("dsh-pet: deepseek 数据非法");
+		if (!d || typeof d !== "object") throw new Error("dsh-pet: malformed deepseek data");
 		return {
 			provider,
 			kind: "deepseek",
@@ -190,7 +190,7 @@ async function fetchBalanceState(baseUrl = "/dsh-pet-7340/balance") {
 			toppedUp: typeof d.toppedUp === "string" ? d.toppedUp : void 0
 		};
 	}
-	throw new Error("dsh-pet: 余额 kind 非法");
+	throw new Error("dsh-pet: invalid balance kind");
 }
 const DEEPSEEK_FULL_BALANCE_CNY = 20;
 function balancePercent(v) {
@@ -215,8 +215,8 @@ const OPENCODE_QUOTA_USD = {
 };
 const WINDOW_LABELS = {
 	rolling: "5h",
-	weekly: "周",
-	monthly: "月"
+	weekly: "wk",
+	monthly: "mo"
 };
 function urgentWindow(v) {
 	if (v.kind !== "opencode") return void 0;
@@ -251,10 +251,10 @@ function resetInText(iso) {
 	const t = new Date(iso).getTime();
 	if (!Number.isFinite(t)) return "";
 	const delta = t - Date.now();
-	if (delta <= 0) return "已重置";
+	if (delta <= 0) return "Reset";
 	const hoursF = delta / 36e5;
-	if (hoursF >= 96) return (Math.round(hoursF / 24 * 10) / 10).toFixed(1) + " 天";
-	return Math.max(.1, Math.round(hoursF * 10) / 10).toFixed(1) + " 小时";
+	if (hoursF >= 96) return (Math.round(hoursF / 24 * 10) / 10).toFixed(1) + " days";
+	return Math.max(.1, Math.round(hoursF * 10) / 10).toFixed(1) + " hours";
 }
 function deepseekPricingTier(now = new Date()) {
 	const parts = new Intl.DateTimeFormat("en-US", {
@@ -277,19 +277,19 @@ function deepseekPricingTier(now = new Date()) {
 function unavailableRows(state) {
 	const rows = state.reason === "unsupported" ? [{
 		role: "error",
-		text: "当前服务商暂不支持余额查询"
+		text: "Balance lookup isn't supported for this provider yet"
 	}, {
 		role: "sub",
-		text: "当前服务商：" + state.provider
+		text: "Current provider: " + state.provider
 	}] : state.reason === "credential-missing" ? [{
 		role: "error",
-		text: "缺少余额查询凭证"
+		text: "Missing credentials for balance lookup"
 	}, {
 		role: "sub",
 		text: state.message ?? ""
 	}] : [{
 		role: "error",
-		text: "余额查询失败"
+		text: "Balance lookup failed"
 	}, {
 		role: "sub",
 		text: state.message ?? ""
@@ -304,32 +304,32 @@ function balanceBubbleView(state) {
 				const reset = resetInText(w.resetsAt);
 				const rows = [{
 					role: "label",
-					text: w.label + "额度已用 " + Math.round(w.percent) + "%"
+					text: w.label + "Used " + Math.round(w.percent) + "%"
 				}, {
 					role: "sub",
-					text: reset ? reset + "重置" : "已重置"
+					text: reset ? reset + "Reset" : "Reset"
 				}];
 				return rows;
 			}
 			return [{
 				role: "label",
-				text: "额度数据不可用"
+				text: "Quota data unavailable"
 			}];
 		}
 		const tier = deepseekPricingTier();
 		return [
 			{
 				role: "label",
-				text: "余额（"
+				text: "Balance ("
 			},
 			{
 				role: "tier",
 				tier,
-				text: tier === "peak" ? "峰" : "谷"
+				text: tier === "peak" ? "Peak" : "Off-peak"
 			},
 			{
 				role: "label",
-				text: "）¥" + (state.total ?? "-")
+				text: ") ¥" + (state.total ?? "-")
 			}
 		];
 	}
@@ -369,7 +369,7 @@ async function getWithRetry(url) {
 async function fetchWhisperState(baseUrl = "/dsh-pet-7340/whisper") {
 	const res = await getWithRetry(baseUrl);
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: 碎碎念响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed chatter response");
 	if (raw.ok !== true) return {
 		ok: false,
 		reason: raw.reason === "provider-missing" ? "provider-missing" : "generate-error",
@@ -377,7 +377,7 @@ async function fetchWhisperState(baseUrl = "/dsh-pet-7340/whisper") {
 	};
 	const text = typeof raw.text === "string" ? raw.text.trim() : "";
 	const ts = Number(raw.ts);
-	if (!text || !Number.isFinite(ts)) throw new Error("dsh-pet: 碎碎念数据非法");
+	if (!text || !Number.isFinite(ts)) throw new Error("dsh-pet: malformed chatter data");
 	const image = typeof raw.image === "string" && raw.image.trim() ? raw.image.trim() : void 0;
 	return image ? {
 		ok: true,
@@ -422,7 +422,7 @@ function whisperBubbleView(state) {
 		role: "label",
 		text: state.text
 	}];
-	const msg = state.reason === "provider-missing" ? "当前对话未配置模型，碎碎念不可用" : "碎碎念生成失败" + (state.message ? "：" + state.message : "");
+	const msg = state.reason === "provider-missing" ? "No model configured for this conversation; chatter unavailable" : "Chatter generation failed" + (state.message ? ":" + state.message : "");
 	return [{
 		role: "label",
 		text: msg
@@ -452,7 +452,7 @@ async function fetchWorkStatus(baseUrl = "/dsh-pet-7340/work-status") {
 	const res = await fetch(baseUrl, { signal: AbortSignal.timeout(TIMEOUT_MS) });
 	if (!res.ok) throw new Error("dsh-pet: work-status HTTP " + res.status);
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: work-status 响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed work-status response");
 	const state = raw.state === null || WORK_STATUS_STATES.includes(raw.state) ? raw.state : null;
 	return {
 		state,
@@ -468,7 +468,7 @@ async function fetchWorkStatus(baseUrl = "/dsh-pet-7340/work-status") {
 * 系数按默认 462px 设计：21px 字号 → ×0.0455、120px 最小宽 → 0.26、230px 最大宽 → 0.5 等。 */
 const bubbleCss = [
 	"@font-face{font-family:\"ShangshouSoftCandy\";src:url(\"/dsh-pet-7340/font/上首软糖体.ttf\") format(\"truetype\");font-display:swap;font-weight:400}",
-	".dsh-pet-bubble{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% - var(--dsh-pet-size)*0.108);min-width:calc(var(--dsh-pet-size)*0.26);max-width:calc(var(--dsh-pet-size)*0.5);padding:calc(var(--dsh-pet-size)*0.022) calc(var(--dsh-pet-size)*0.030);border-radius:calc(var(--dsh-pet-size)*0.035);background:rgba(255,255,255,.92);color:#2b2b2b;font-family:\"ShangshouSoftCandy\",\"Yuanti SC\",\"YouYuan\",\"幼圆\",\"Comic Sans MS\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif;font-size:calc(var(--dsh-pet-size)*0.0455);line-height:1.6;z-index:3;pointer-events:none;box-shadow:0 calc(var(--dsh-pet-size)*0.009) calc(var(--dsh-pet-size)*0.035) rgba(0,0,0,.14),0 1px 3px rgba(0,0,0,.08);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease;white-space:nowrap}",
+	".dsh-pet-bubble{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% - var(--dsh-pet-size)*0.108);min-width:calc(var(--dsh-pet-size)*0.26);max-width:calc(var(--dsh-pet-size)*0.5);padding:calc(var(--dsh-pet-size)*0.022) calc(var(--dsh-pet-size)*0.030);border-radius:calc(var(--dsh-pet-size)*0.035);background:rgba(255,255,255,.92);color:#2b2b2b;font-family:\"ShangshouSoftCandy\",\"Yuanti SC\",\"YouYuan\",\"Comic Sans MS\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif;font-size:calc(var(--dsh-pet-size)*0.0455);line-height:1.6;z-index:3;pointer-events:none;box-shadow:0 calc(var(--dsh-pet-size)*0.009) calc(var(--dsh-pet-size)*0.035) rgba(0,0,0,.14),0 1px 3px rgba(0,0,0,.08);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease;white-space:nowrap}",
 	".dsh-pet-bubble::after{content:\"\";position:absolute;left:50%;bottom:calc(var(--dsh-pet-size)*-0.017);transform:translateX(-50%);border:calc(var(--dsh-pet-size)*0.017) solid transparent;border-top-color:rgba(255,255,255,.92);border-bottom:none}",
 	".dsh-pet-bubble.is-on{opacity:1}",
 	".dsh-pet-bubble.dsh-pet-whisper{font-size:calc(var(--dsh-pet-size)*0.034);min-width:calc(var(--dsh-pet-size)*0.10);max-width:calc(var(--dsh-pet-size)*0.5);white-space:normal;overflow-wrap:anywhere}",
@@ -592,7 +592,7 @@ const SCORE_POPUP_CSS = [
 	".dsh-pet-score{position:fixed;z-index:2147483002;min-width:120px;text-align:center;",
 	"background:rgba(255,255,255,.97);border:1px solid rgba(255,179,0,.35);border-radius:12px;",
 	"box-shadow:0 10px 32px rgba(0,0,0,.22);padding:8px 16px 9px;user-select:none;pointer-events:auto;",
-	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','幼圆','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;}",
+	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;}",
 	".dsh-pet-score.is-in{animation:dshPetScorePop .28s ease}",
 	".dsh-pet-score-val{font-size:22px;line-height:1.25;font-weight:700;color:#ff8f00;font-variant-numeric:tabular-nums}",
 	".dsh-pet-score-sub{font-size:11px;line-height:1.4;color:rgba(43,43,43,.6);margin-top:2px;white-space:nowrap}",
@@ -688,7 +688,7 @@ function mountScorePopup(opts) {
 	val.textContent = "+" + opts.score;
 	const sub = document.createElement("div");
 	sub.className = "dsh-pet-score-sub";
-	sub.textContent = "速度 " + Math.round(opts.speed) + " · 大小 " + Math.round(opts.size);
+	sub.textContent = "Speed " + Math.round(opts.speed) + " · Size " + Math.round(opts.size);
 	root.appendChild(val);
 	root.appendChild(sub);
 	document.body.appendChild(root);
@@ -737,9 +737,9 @@ function mountScorePopup(opts) {
 //#region src/shared/menu.ts
 /** 事件名 → 分类标签（无映射时用事件名本身） */
 const EVENT_LABELS = {
-	balance: "余额档位",
-	whisper: "碎碎念",
-	workStatus: "工作状态"
+	balance: "Balance tiers",
+	whisper: "Chatter",
+	workStatus: "Work status"
 };
 const leaf = (anim) => ({
 	label: anim,
@@ -748,11 +748,11 @@ const leaf = (anim) => ({
 function buildMenuTree(animations) {
 	const groups = [];
 	const pools = [
-		["待机", animations.idle],
-		["转向", animations.turn],
-		["拖拽", animations.drag],
-		["点击回应", animations.clicks],
-		["移动", animations.moves.actions.map((m) => m.name)]
+		["Idle", animations.idle],
+		["Turning", animations.turn],
+		["Drag", animations.drag],
+		["Click reactions", animations.clicks],
+		["Movement", animations.moves.actions.map((m) => m.name)]
 	];
 	for (const [label, pool] of pools) if (pool.length) groups.push({
 		label,
@@ -776,7 +776,7 @@ function buildMenuTree(animations) {
 	}
 	if (!groups.length) return [];
 	return [{
-		label: "动作",
+		label: "Actions",
 		children: groups
 	}];
 }
@@ -950,7 +950,7 @@ async function sendChat(baseUrl, text) {
 		signal: AbortSignal.timeout(SEND_TIMEOUT_MS)
 	});
 	const raw = await res.json().catch(() => null);
-	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: 对话响应非法");
+	if (!raw || typeof raw !== "object") throw new Error("dsh-pet: malformed chat response");
 	const o = raw;
 	if (o.ok !== true) return {
 		ok: false,
@@ -958,7 +958,7 @@ async function sendChat(baseUrl, text) {
 		message: typeof o.message === "string" ? o.message : void 0
 	};
 	const reply = typeof o.reply === "string" ? o.reply.trim() : "";
-	if (!reply) throw new Error("dsh-pet: 对话回复非法");
+	if (!reply) throw new Error("dsh-pet: malformed chat reply");
 	const image = typeof o.image === "string" && o.image.trim() ? o.image.trim() : void 0;
 	return image ? {
 		ok: true,
@@ -975,7 +975,7 @@ const CHAT_CSS = [
 	".dsh-pet-chat{position:fixed;z-index:2147483001;width:160px;max-width:80vw;",
 	"background:rgba(255,255,255,.98);border:1px solid rgba(0,0,0,.12);border-radius:10px;",
 	"box-shadow:0 10px 32px rgba(0,0,0,.22);color:#2b2b2b;font-size:14px;line-height:1.5;",
-	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','幼圆','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
+	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
 	"user-select:none}",
 	".dsh-pet-chat *{box-sizing:border-box}",
 	".dsh-pet-chat-input{display:block;width:100%;border:none;outline:none;background:transparent;",
@@ -1014,7 +1014,7 @@ function mountChatDialog(opts) {
 	root.className = "dsh-pet-chat";
 	const input = document.createElement("textarea");
 	input.className = "dsh-pet-chat-input";
-	input.placeholder = "说点什么…";
+	input.placeholder = "Say something…";
 	input.maxLength = 2e3;
 	input.rows = 1;
 	let measureCtx = null;
@@ -1074,11 +1074,11 @@ function mountChatDialog(opts) {
 				close();
 				if (onReply) onReply(state.reply, state.image);
 			} else {
-				err.textContent = "对话失败：" + (state.message ?? state.reason);
+				err.textContent = "Chat failed: " + (state.message ?? state.reason);
 				err.style.display = "block";
 			}
 		}).catch((e) => {
-			err.textContent = "对话异常：" + String(e && e.message ? e.message : e);
+			err.textContent = "Chat error: " + String(e && e.message ? e.message : e);
 			err.style.display = "block";
 		}).finally(() => {
 			sending = false;
@@ -1120,18 +1120,18 @@ function frameToToast(frame) {
 			if (ev.type !== "turn/end") return null;
 			const kind = ev.data?.reason?.kind;
 			if (kind === "completed") return {
-				title: "对话完成",
+				title: "Chat finished",
 				body: "",
 				icon: NOTIFY_ICONS$1.done
 			};
 			if (kind === "error") return {
-				title: "生成失败",
+				title: "Generation failed",
 				body: ev.data?.reason?.error?.message ?? "",
 				icon: NOTIFY_ICONS$1.error
 			};
 			if (kind === "max-tokens") return {
-				title: "输出被截断",
-				body: "已达到输出 token 上限",
+				title: "Output truncated",
+				body: "Reached the output token limit",
 				icon: NOTIFY_ICONS$1.truncated
 			};
 			return null;
@@ -1140,21 +1140,21 @@ function frameToToast(frame) {
 			const toolName = typeof frame.toolName === "string" ? frame.toolName : "";
 			const reason = typeof frame.reason === "string" && frame.reason ? frame.reason : "";
 			return {
-				title: "正在申请权限",
-				body: (toolName ? "工具「" + toolName + "」" : "") + (reason ? "：" + reason : ""),
+				title: "Requesting permission",
+				body: (toolName ? "Tool \"" + toolName + "\"" : "") + (reason ? ":" + reason : ""),
 				icon: NOTIFY_ICONS$1.approval
 			};
 		}
 		case "question/requested": {
 			const q = Array.isArray(frame.questions) && frame.questions[0]?.question || "";
 			return {
-				title: "模型在等你回答",
+				title: "The model is waiting for your answer",
 				body: q,
 				icon: NOTIFY_ICONS$1.question
 			};
 		}
 		case "host/agent-error": return {
-			title: "生成失败",
+			title: "Generation failed",
 			body: typeof frame.message === "string" ? frame.message : "",
 			icon: NOTIFY_ICONS$1.error
 		};
@@ -1206,7 +1206,7 @@ function toast(title, body, icon) {
 	if (!notifyEnabled) return;
 	if (isPageActive()) return;
 	if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
-	console.log("【弹窗】" + title + (body ? "：" + body : ""));
+	console.log("[Dialog]" + title + (body ? ":" + body : ""));
 	try {
 		const opts = {};
 		if (body) opts.body = truncate(body);
@@ -1244,7 +1244,7 @@ async function requestNotificationPermission() {
 		return {
 			ok: false,
 			reason: "error",
-			message: "权限未授予（" + p + "）"
+			message: "Permission not granted (" + p + ")"
 		};
 	} catch (e) {
 		return {
@@ -1324,78 +1324,78 @@ const petBridge = {
 };
 const NS = "pet.config";
 const zh = {
-	nav: "桌宠配置",
-	intro: "管理多个桌宠：每个宠物可独立设置大小与位置（保存后即时生效）。",
-	petsLabel: "宠物列表",
-	add: "添加宠物",
-	remove: "删除",
-	confirmRemove: "确定删除宠物「{id}」吗？",
-	confirmTitle: "确认操作",
-	cancel: "取消",
-	atLeastOne: "至少保留一个宠物。",
-	emptyPets: "暂无宠物，点击「添加宠物」创建。",
-	sizeLabel: "大小（宽度 px）",
-	sizeHint: "高度自动 = 宽度 × 9/16。",
-	nameLabel: "名字",
-	nameHint: "显示名：鼠标悬浮宠物时弹出，也会加进 AI 人设（你的名字是 X）。可重复，留空按宠物 id 处理。",
-	balanceEnabled: "余额功能",
-	balanceEnabledHint: "启用后该宠物触发余额动画并显示余额气泡。",
-	whisperEnabled: "碎碎念",
-	whisperEnabledHint: "启用后该宠物按周期用 AI 生成一句话并播碎碎念动画（人设与周期在配置文件顶层）。",
-	workStatusEnabled: "工作状态联动",
-	workStatusEnabledHint: "启用后该宠物跟随 DSH 工作状态：思考/工作中/等待确认/完成/出错时自动切对应动画并弹气泡（动画池在配置顶层，仅监听不调用模型）。",
-	displayLabel: "显示位置",
-	displayHint: "web=仅浏览器 / desktop=仅桌面 / both=两者都显示 / none=都不显示",
-	"display.web": "仅浏览器",
-	"display.desktop": "仅桌面",
-	"display.both": "两者都显示",
-	"display.none": "都不显示",
-	cornerLabel: "位置",
-	"corner.top-left": "左上角",
-	"corner.top-right": "右上角",
-	"corner.bottom-left": "左下角",
-	"corner.bottom-right": "右下角",
-	marginX: "水平偏移",
-	marginY: "垂直偏移",
-	save: "保存",
-	reset: "恢复默认",
-	confirmReset: "确定恢复默认吗？将删除整个用户配置（含自定义的动画池与播放权重）。",
-	resetHint: "「重置」会删除整个用户配置（含自定义的动画池与播放权重），不只是宠物列表。",
-	configMeta: "高级配置（文件）",
-	configMetaHint: "用户配置可覆盖宠物列表 / 动画池 / 播放权重，修改后刷新或重启生效；默认配置为完整参考。",
-	defaultConfig: "默认配置（只读，完整参考）",
-	userConfig: "用户配置（自定义覆盖）",
-	animationDir: "动画素材目录（可自定义/扩充动画）",
-	saved: "已保存，桌宠即时生效。",
-	loadError: "加载配置失败",
-	invalid: "请检查输入：大小需为正数，边距可为任意数字。",
-	busy: "保存中…",
-	extraPetsHint: "另 {n} 只额外宠物由 pet/ 目录文件定义（<名>-config.json + <名>-animation/），它们不在此列表——改文件即生效，刷新可见。",
-	notifyToggle: "系统通知",
-	notifyToggleHint: "对话完成 / 生成失败 / 权限申请 / 用户选择，在窗口失焦时弹出系统级通知（桌面右下角）。",
-	whisperImageToggle: "碎碎念配图",
-	whisperImageToggleHint: "碎碎念时从表情包池随机抽一张，连同那句话一起显示（图片映射在配置文件顶层 memes）。token：碎碎念本来就每次生成都要调一次模型，配图只是把抽中那张的名称+描述（约 100 字符 / ≈60 token）加进同一次请求，增量可忽略。",
-	chatImageToggle: "对话配图",
-	chatImageToggleHint: "对话时由 AI 按当前语境从表情包池挑一张配图（可不挑；图片映射在配置文件顶层 memes）。token：每条消息都要把整张清单附进请求，当前约 1.1k 字符（≈650 token，约碎碎念配图的 11 倍），并随图片数量线性增长；关掉则一个字符都不附。",
-	notifyGetPermission: "获取权限",
-	notifyPermissionOk: "已获得通知权限，右下角出现测试通知。",
-	notifyDenyUnsupported: "当前环境不支持系统通知（浏览器无 Notification API）。",
-	notifyDenyBlocked: "通知权限已被浏览器标记为「阻止」。",
-	notifyDenyRejected: "你在权限询问弹窗中选择了「阻止」。",
-	notifyDenyError: "申请权限时出错",
-	notifyGuide: "引导：点击地址栏左侧 🔒/ⓘ →「网站设置」→「通知」→ 改为「允许」，刷新页面后重试。",
-	storageTitle: "卸载与存储",
-	storageHint: "插件在本机落下的全部位置。删缓存不影响使用（会自动重下/重建）；删「插件用户数据」会丢配置与对话记忆。",
-	"storage.userData": "插件用户数据：自定义配置 main-config.json、对话记忆 memory.json、自定义动画素材 main-animation/、文件宠物 pet/",
-	"storage.electron": "桌面宠物用的 Electron 运行时（体积较大；删除后下次启用桌面模式会自动重新下载）",
-	"storage.desktopCache": "桌面宠物窗口的缓存与主屏缩放缓存（可删，会自动重建）",
-	"storage.electronCache": "Electron 安装包下载缓存（可删，需要时会重新下载）",
-	"storage.package": "插件本体（由 DSH 管理，用下面的卸载命令移除，不要手删）",
-	storageMissing: "（尚未创建）",
-	uninstallTitle: "卸载方法",
-	uninstallStep1: "1. 先退出 DSH（桌面宠物随之退出）；不要在桌宠运行时删除上面的文件。",
-	uninstallStep2: "2. 卸载插件本体（终端执行，会同时从 profile 的 bundle 层移除）：",
-	uninstallStep3: "3. 按需删除上面的位置：缓存类删了无影响；「插件用户数据」删了会丢配置与对话记忆（想保留就先备份其中的 main-config.json）。",
+	nav: "Pet settings",
+	intro: "Manage multiple pets: each one can have its own size and position (saved changes apply immediately).",
+	petsLabel: "Pet list",
+	add: "Add pet",
+	remove: "Delete",
+	confirmRemove: "Delete pet \"{id}\"?",
+	confirmTitle: "Confirm",
+	cancel: "Cancel",
+	atLeastOne: "Keep at least one pet.",
+	emptyPets: "No pets yet. Click \"Add pet\" to create one.",
+	sizeLabel: "Size (width in px)",
+	sizeHint: "Height is automatic: width × 9/16.",
+	nameLabel: "Name",
+	nameHint: "Display name: shown when the cursor hovers over the pet, and added to the AI persona (your name is X). May repeat; leave blank to use the pet id.",
+	balanceEnabled: "Balance",
+	balanceEnabledHint: "When enabled, this pet plays the balance animation and shows a balance bubble.",
+	whisperEnabled: "Chatter",
+	whisperEnabledHint: "When enabled, this pet asks the AI for a line on a timer and plays the chatter animation (persona and interval live at the top level of the config file).",
+	workStatusEnabled: "Work status",
+	workStatusEnabledHint: "When enabled, this pet follows DSH work state: thinking / working / waiting for confirmation / done / error each play their own animation and bubble (the animation pool is at the top level of the config; it only listens and never calls a model).",
+	displayLabel: "Display",
+	displayHint: "web = browser only / desktop = desktop only / both = show in both / none = hide",
+	"display.web": "Browser only",
+	"display.desktop": "Desktop only",
+	"display.both": "Both",
+	"display.none": "Neither",
+	cornerLabel: "Position",
+	"corner.top-left": "Top left",
+	"corner.top-right": "Top right",
+	"corner.bottom-left": "Bottom left",
+	"corner.bottom-right": "Bottom right",
+	marginX: "Horizontal offset",
+	marginY: "Vertical offset",
+	save: "Save",
+	reset: "Restore defaults",
+	confirmReset: "Restore defaults? This deletes the whole user config, including custom animation pools and play weights.",
+	resetHint: "\"Reset\" deletes the whole user config (including custom animation pools and play weights), not just the pet list.",
+	configMeta: "Advanced (files)",
+	configMetaHint: "The user config can override the pet list, animation pool and play weights; changes apply after a refresh or restart. The default config is the full reference.",
+	defaultConfig: "Default config (read-only, full reference)",
+	userConfig: "User config (your overrides)",
+	animationDir: "Animation asset directory (add or customise animations)",
+	saved: "Saved. The pet updates immediately.",
+	loadError: "Failed to load config",
+	invalid: "Check your input: size must be a positive number; margins can be any number.",
+	busy: "Saving…",
+	extraPetsHint: "{n} more pets are defined by files in the pet/ directory (<name>-config.json + <name>-animation/). They are not in this list — editing the files takes effect immediately; refresh to see them.",
+	notifyToggle: "System notifications",
+	notifyToggleHint: "Chat finished / generation failed / permission request / user choice — show a system notification (bottom-right of the desktop) when the window is not focused.",
+	whisperImageToggle: "Chatter images",
+	whisperImageToggleHint: "Attach a random meme to each chatter line, shown with the sentence (the image map is \"memes\" at the top level of the config). Tokens: chatter already calls the model once per line, so adding the picked image's name and description (about 100 characters / ~60 tokens) to the same request costs next to nothing.",
+	chatImageToggle: "Chat images",
+	chatImageToggleHint: "During chat, the AI picks one meme from the pool for the current context (or none; the image map is \"memes\" at the top level of the config). Tokens: every message carries the whole list — about 1.1k characters (~650 tokens, roughly 11× chatter images), growing linearly with the number of images. Turn it off and not a single character is sent.",
+	notifyGetPermission: "Get permission",
+	notifyPermissionOk: "Notification permission granted; a test notification is showing in the bottom-right corner.",
+	notifyDenyUnsupported: "System notifications are not available here (the browser has no Notification API).",
+	notifyDenyBlocked: "Notification permission is blocked in this browser.",
+	notifyDenyRejected: "You chose \"Block\" in the permission prompt.",
+	notifyDenyError: "Error while requesting permission",
+	notifyGuide: "How to fix: click the 🔒/ⓘ on the left of the address bar → Site settings → Notifications → Allow, then refresh and try again.",
+	storageTitle: "Uninstall and storage",
+	storageHint: "Every place this plugin writes to on this machine. Deleting caches is harmless (they are re-downloaded or rebuilt); deleting \"plugin user data\" loses your config and chat memory.",
+	"storage.userData": "Plugin user data: custom config main-config.json, chat memory memory.json, custom animation assets main-animation/, file-defined pets pet/",
+	"storage.electron": "The Electron runtime used for the desktop pet (large; a deleted copy is downloaded again the next time desktop mode is enabled)",
+	"storage.desktopCache": "Cache for the pet window and the main-screen scale (safe to delete; rebuilt automatically)",
+	"storage.electronCache": "Electron installer download cache (safe to delete; downloaded again when needed)",
+	"storage.package": "The plugin itself (managed by DSH — remove it with the uninstall command below, do not delete by hand)",
+	storageMissing: "(not created yet)",
+	uninstallTitle: "How to uninstall",
+	uninstallStep1: "1. Quit DSH first (the pet exits with it); do not delete the files above while the pet is running.",
+	uninstallStep2: "2. Uninstall the plugin (run in a terminal; also removes it from the profile's bundle layer):",
+	uninstallStep3: "3. Delete the locations above as needed: caches are harmless to remove; deleting \"plugin user data\" loses your config and chat memory (back up main-config.json first if you want to keep it).",
 	uninstallCmd: "dsh plugin --profile {profile} remove cute-fat-fish-pet"
 };
 const en = {
@@ -1519,7 +1519,7 @@ function makePetConfigSection(rt) {
 		const [confirm, setConfirm] = useState(null);
 		const [paths, setPaths] = useState(null);
 		useEffect(() => {
-			fetch("/dsh-pet-7340/config/meta").then((r) => r.ok ? r.json() : null).then((p) => setPaths(p)).catch(() => console.warn("[dsh-pet] 读取配置文件路径失败"));
+			fetch("/dsh-pet-7340/config/meta").then((r) => r.ok ? r.json() : null).then((p) => setPaths(p)).catch(() => console.warn("[dsh-pet] failed to read the config file path"));
 		}, []);
 		const [notifyEnabled$1, setNotifyEnabled] = useState(true);
 		const [whisperImage, setWhisperImage] = useState(false);
@@ -1583,7 +1583,7 @@ function makePetConfigSection(rt) {
 			});
 			const r = await requestNotificationPermission();
 			if (!r.ok) {
-				const reason = r.reason === "unsupported" ? t("notifyDenyUnsupported") : r.reason === "denied" ? t("notifyDenyBlocked") : r.reason === "rejected" ? t("notifyDenyRejected") : t("notifyDenyError") + (r.message ? "：" + r.message : "");
+				const reason = r.reason === "unsupported" ? t("notifyDenyUnsupported") : r.reason === "denied" ? t("notifyDenyBlocked") : r.reason === "rejected" ? t("notifyDenyRejected") : t("notifyDenyError") + (r.message ? ":" + r.message : "");
 				setPermMsg({
 					kind: "err",
 					text: reason + (r.reason === "unsupported" ? "" : " " + t("notifyGuide"))
@@ -1591,8 +1591,8 @@ function makePetConfigSection(rt) {
 				return;
 			}
 			try {
-				new Notification("测试通知", {
-					body: "【dsh-pet】系统通知已就绪。",
+				new Notification("Test notification", {
+					body: "[dsh-pet] System notifications are ready.",
 					icon: NOTIFY_ICONS.test
 				});
 			} catch {}
@@ -2263,7 +2263,7 @@ function makePetConfigSection(rt) {
 								lineHeight: "18px",
 								wordBreak: "break-all"
 							},
-							children: t("defaultConfig") + "：" + paths.default
+							children: t("defaultConfig") + ":" + paths.default
 						}),
 						h("div", {
 							style: {
@@ -2271,7 +2271,7 @@ function makePetConfigSection(rt) {
 								lineHeight: "18px",
 								wordBreak: "break-all"
 							},
-							children: t("userConfig") + "：" + paths.user
+							children: t("userConfig") + ":" + paths.user
 						}),
 						h("div", {
 							style: {
@@ -2279,7 +2279,7 @@ function makePetConfigSection(rt) {
 								lineHeight: "18px",
 								wordBreak: "break-all"
 							},
-							children: t("animationDir") + "：" + paths.animations
+							children: t("animationDir") + ":" + paths.animations
 						})
 					]
 				}) : null,
@@ -2848,7 +2848,7 @@ function makePetUI(rt) {
 				if (!mountedRef.current) return;
 				if (pendingRef.current?.gen !== gen) return;
 				pendingRef.current = null;
-				console.warn("[dsh-pet] 素材加载失败 pet=" + cfg.id + " anim=" + next + "：" + (err instanceof Error ? err.message : String(err)) + "（已释放本次切换）");
+				console.warn("[dsh-pet] asset load failed pet=" + cfg.id + " anim=" + next + ":" + (err instanceof Error ? err.message : String(err)) + "(this switch was released)");
 			});
 			const onReady = () => {
 				el.removeEventListener("loadeddata", onReady);
@@ -2919,17 +2919,17 @@ function makePetUI(rt) {
 			if (p === void 0) return;
 			const pool = petAnims.events?.balance;
 			if (!pool || pool.length === 0) {
-				console.error("[dsh-pet] 配置缺少 animations.events.balance，无法播放余额事件动画");
+				console.error("[dsh-pet] config is missing animations.events.balance; cannot play the balance event animation");
 				return;
 			}
 			const idx = balanceEventIndex(p);
 			const slot = pool[idx];
 			if (!slot) {
-				console.error("[dsh-pet] balance 档位索引越界：p=" + p + " idx=" + idx);
+				console.error("[dsh-pet] balance tier index out of range: p=" + p + " idx=" + idx);
 				return;
 			}
 			const name = pickSlot(slot, animRef.current);
-			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " balance pet=" + cfg.id + " p=" + p.toFixed(1) + "% -> [档" + idx + "] " + name);
+			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " balance pet=" + cfg.id + " p=" + p.toFixed(1) + "% -> [tier" + idx + "] " + name);
 			stopMove();
 			setBubbleOn(true);
 			if (bubbleTimerRef.current !== null) window.clearTimeout(bubbleTimerRef.current);
@@ -2954,7 +2954,7 @@ function makePetUI(rt) {
 			if (workStatusTick === 0 || workStatusTick === prevWorkTickRef.current) return;
 			prevWorkTickRef.current = workStatusTick;
 			if (!workStatus || workStatus.state === null) {
-				console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " " + (prevWorkStateRef.current ?? "null") + "->null    播完即停（回待机，收起气泡）");
+				console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " " + (prevWorkStateRef.current ?? "null") + "->null    play once and stop (back to idle, bubble hidden)");
 				prevWorkStateRef.current = null;
 				if (poolIncludes(petAnims.events?.workStatus ?? [], animRef.current)) {
 					const front = frontRef.current === 0 ? videoARef.current : videoBRef.current;
@@ -2971,13 +2971,13 @@ function makePetUI(rt) {
 			}
 			const pool = petAnims.events?.workStatus;
 			if (!pool || pool.length === 0) {
-				console.error("[dsh-pet] 配置缺少 animations.events.workStatus，无法播放工作状态动画");
+				console.error("[dsh-pet] config is missing animations.events.workStatus; cannot play the work-status animation");
 				return;
 			}
 			const idx = WORK_STATUS_INDEX[workStatus.state];
 			const slot = pool[idx];
 			if (slot === void 0) {
-				console.error("[dsh-pet] work-status 档位索引越界：state=" + workStatus.state + " idx=" + idx);
+				console.error("[dsh-pet] work-status tier index out of range: state=" + workStatus.state + " idx=" + idx);
 				return;
 			}
 			const name = pickSlot(slot, animRef.current);
@@ -3020,9 +3020,9 @@ function makePetUI(rt) {
 							whisperTextRef.current = state.text;
 							triggerWhisper(state.text, state.image);
 						}
-					} else console.warn("[dsh-pet] 碎碎念生成失败 pet=" + cfg.id + " reason=" + state.reason + (state.message ? " " + state.message : ""));
+					} else console.warn("[dsh-pet] chatter generation failed pet=" + cfg.id + " reason=" + state.reason + (state.message ? " " + state.message : ""));
 				} catch (e) {
-					if (alive) console.warn("[dsh-pet] 碎碎念拉取异常 pet=" + cfg.id, e);
+					if (alive) console.warn("[dsh-pet] chatter fetch error pet=" + cfg.id, e);
 				}
 			};
 			refresh();
@@ -3064,11 +3064,11 @@ function makePetUI(rt) {
 		const triggerWhisper = (text, image) => {
 			const pool = petAnims.events?.whisper;
 			if (!pool || pool.length === 0) {
-				console.error("[dsh-pet] 配置缺少 animations.events.whisper，无法播放碎碎念动画");
+				console.error("[dsh-pet] config is missing animations.events.whisper; cannot play the chatter animation");
 				return;
 			}
 			const name = pickSlot(pick(pool, animRef.current), animRef.current);
-			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " whisper pet=" + cfg.id + " -> [" + name + "] 「" + text + "」");
+			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " whisper pet=" + cfg.id + " -> [" + name + "] \"" + text + "\"");
 			stopMove();
 			setWhisperText(text);
 			setWhisperImage(image);
@@ -3107,7 +3107,7 @@ function makePetUI(rt) {
 					setAnim(next);
 				} else {
 					kind = "MOVES";
-					next = typeof moved === "string" ? moved : "移动进行中(不重播)";
+					next = typeof moved === "string" ? moved : "moving (no replay)";
 				}
 			} else {
 				const act = pickCategoryAction(animations.categories, animations.idle, facingRef.current, animRef.current);
@@ -3128,7 +3128,7 @@ function makePetUI(rt) {
 			const slot = pool[idx];
 			if (slot === void 0) return false;
 			const name = pickSlot(slot, animRef.current);
-			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " 互动结束恢复状态动画: " + name);
+			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " interaction ended, restoring state animation: " + name);
 			setOnce(Array.isArray(slot) && slot.length > 1);
 			setAnim(name);
 			return true;
@@ -3143,21 +3143,21 @@ function makePetUI(rt) {
 			if (isEvent && wsNow && wsNow.state && wsNow.state !== "success" && wsNow.state !== "error") {
 				const nextWork = nextWorkStatusAnim(animations.events?.workStatus ?? [], animRef.current);
 				if (nextWork !== null) {
-					console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " workStatus 档内轮换: " + animRef.current + " -> " + nextWork);
+					console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " workStatus tier rotate: " + animRef.current + " -> " + nextWork);
 					setOnce(true);
 					setAnim(nextWork);
 					setSeq((s) => s + 1);
 					return;
 				}
 				if (poolIncludes(animations.events?.workStatus ?? [], animRef.current)) {
-					console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " workStatus 循环续播: " + animRef.current);
+					console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " workStatus loop continue: " + animRef.current);
 					setOnce(false);
 					setSeq((s) => s + 1);
 					return;
 				}
 			}
 			if (isEvent) {
-				console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + " 事件动画播完 ended anim=" + animRef.current + " ws=" + (workStatusRef.current && workStatusRef.current.state || "null"));
+				console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " pet=" + cfg.id + "  event animation finished, ended anim=" + animRef.current + " ws=" + (workStatusRef.current && workStatusRef.current.state || "null"));
 				if (resumeWorkStatusAnim()) return;
 				if (animations.idle.length) setAnim(pick(animations.idle, animRef.current));
 				setOnce(true);
@@ -3661,11 +3661,11 @@ function makePetUI(rt) {
 		};
 		const handleMenuAction = (leaf$1) => {
 			if (leaf$1.action === "whisper") {
-				console.info("[dsh-pet] 菜单触发碎碎念 pet=" + cfg.id);
+				console.info("[dsh-pet] menu-triggered chatter pet=" + cfg.id);
 				fetchWhisperTrigger("/dsh-pet-7340/whisper/trigger?pet=" + encodeURIComponent(cfg.id)).then((state) => {
 					if (state.ok) triggerWhisper(state.text, state.image);
-					else console.warn("[dsh-pet] 碎碎念手动触发失败 reason=" + state.reason + (state.message ? " " + state.message : ""));
-				}).catch((e) => console.warn("[dsh-pet] 碎碎念手动触发异常", e));
+					else console.warn("[dsh-pet] manual chatter trigger failed reason=" + state.reason + (state.message ? " " + state.message : ""));
+				}).catch((e) => console.warn("[dsh-pet] manual chatter trigger error", e));
 				return;
 			}
 			if (leaf$1.action === "chat") {
@@ -3677,7 +3677,7 @@ function makePetUI(rt) {
 					x: hitRect ? hitRect.right + 6 : window.innerWidth - 256,
 					y: hitRect ? hitRect.top + 6 : 8,
 					onReply: (reply, image) => {
-						console.info("[dsh-pet] 对话回复 pet=" + cfg.id + "「" + reply + "」" + (image ? " [" + image + "]" : ""));
+						console.info("[dsh-pet] chat reply pet=" + cfg.id + "\"" + reply + "\"" + (image ? " [" + image + "]" : ""));
 						triggerWhisper(reply, image);
 					},
 					onClose: () => {
@@ -3709,15 +3709,15 @@ function makePetUI(rt) {
 		const handleContextMenu = (e) => {
 			const tree = [
 				{
-					label: "碎碎念",
+					label: "Chatter",
 					action: "whisper"
 				},
 				{
-					label: "对话",
+					label: "Chat",
 					action: "chat"
 				},
 				{
-					label: "回到初始位置",
+					label: "Back to start",
 					action: "home"
 				},
 				...buildMenuTree(petAnims)
@@ -3837,7 +3837,7 @@ function makePetUI(rt) {
 			const { show, key } = decideBalanceNotice(state, noticeKeyRef.current, explicit);
 			noticeKeyRef.current = key;
 			if (show) setBalanceNoticeTick((t) => t + 1);
-			if (state.reason !== "unsupported") console.error("[dsh-pet] 余额查询失败 reason=" + state.reason + (state.message ? " " + state.message : ""));
+			if (state.reason !== "unsupported") console.error("[dsh-pet] balance lookup failed reason=" + state.reason + (state.message ? " " + state.message : ""));
 		};
 		const [workStatus, setWorkStatus] = useState(null);
 		const [workStatusTick, setWorkStatusTick] = useState(0);
@@ -3848,7 +3848,7 @@ function makePetUI(rt) {
 			*  容器不再自己拼任何字段（曾经的第二份补吹实现漏过 physics，导致新增/恢复默认后拖不动）。 */
 			const applyMerged = (merged) => {
 				const main = merged?.main;
-				if (typeof main !== "object" || main === null) throw new Error("配置响应不是成品聚合（host 版本不匹配？）");
+				if (typeof main !== "object" || main === null) throw new Error("Config response is not the assembled result (host version mismatch?)");
 				const flattened = flattenConfigPets(merged);
 				mainRefreshRef.current = main.eventsRefreshSec ?? {};
 				petBridge.current = flattened;
@@ -3868,7 +3868,7 @@ function makePetUI(rt) {
 					applyMerged(merged);
 					setReady(true);
 				} catch (e) {
-					console.error("[dsh-pet] 配置加载失败", e);
+					console.error("[dsh-pet] config load failed", e);
 				}
 			})();
 			petBridge.reload = (merged) => {
@@ -3878,7 +3878,7 @@ function makePetUI(rt) {
 						if (!alive) return;
 						applyMerged(next);
 					} catch (e) {
-						console.error("[dsh-pet] 配置重载失败，保留当前渲染列表", e);
+						console.error("[dsh-pet] config reload failed; keeping the current render list", e);
 					}
 				})();
 			};
@@ -3899,7 +3899,7 @@ function makePetUI(rt) {
 					if (!alive) return;
 					applyBalanceRef.current(state, false);
 				} catch (e) {
-					if (alive) console.error("[dsh-pet] 余额拉取异常", e);
+					if (alive) console.error("[dsh-pet] balance fetch error", e);
 				}
 			};
 			refresh();
@@ -4011,7 +4011,7 @@ function makeFactory() {
 			ctx.effect(() => {
 				const commandUi = ctx.get?.("commandUi");
 				if (!commandUi || typeof commandUi.decorate !== "function") {
-					console.warn("[dsh-pet] 命令选择框不可用：commandUi 服务缺失（/pet 仍可手输 id 或名字）");
+					console.warn("[dsh-pet] command picker unavailable: commandUi service missing (/pet still accepts an id or name)");
 					return () => {};
 				}
 				return commandUi.decorate({

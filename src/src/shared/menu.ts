@@ -44,9 +44,9 @@ export type MenuNode = MenuLeaf | MenuBranch;
 
 /** 事件名 → 分类标签（无映射时用事件名本身） */
 const EVENT_LABELS: Record<string, string> = {
-  balance: '余额档位',
-  whisper: '碎碎念',
-  workStatus: '工作状态',
+  balance: 'Balance tiers',
+  whisper: 'Chatter',
+  workStatus: 'Work status',
 };
 
 const leaf = (anim: string): MenuLeaf => ({ label: anim, anim });
@@ -59,11 +59,11 @@ const leaf = (anim: string): MenuLeaf => ({ label: anim, anim });
 export function buildMenuTree(animations: Animations): MenuNode[] {
   const groups: MenuNode[] = [];
   const pools: Array<[string, string[]]> = [
-    ['待机', animations.idle],
-    ['转向', animations.turn],
-    ['拖拽', animations.drag],
-    ['点击回应', animations.clicks],
-    ['移动', animations.moves.actions.map((m) => m.name)],
+    ['Idle', animations.idle],
+    ['Turning', animations.turn],
+    ['Drag', animations.drag],
+    ['Click reactions', animations.clicks],
+    ['Movement', animations.moves.actions.map((m) => m.name)],
   ];
   for (const [label, pool] of pools) {
     if (pool.length) groups.push({ label, children: pool.map(leaf) });
@@ -86,7 +86,7 @@ export function buildMenuTree(animations: Animations): MenuNode[] {
     if (names.length) groups.push({ label: EVENT_LABELS[key] ?? key, children: names.map(leaf) });
   }
   if (!groups.length) return [];
-  return [{ label: '动作', children: groups }];
+  return [{ label: 'Actions', children: groups }];
 }
 
 /** 该动画是否属于 noMirror 分类（文字类）：朝右（镜像）时点播前强制朝左，避免文字镜像 */

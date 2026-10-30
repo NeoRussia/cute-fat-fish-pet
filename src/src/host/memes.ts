@@ -36,7 +36,7 @@ export function readMemePool(memes: unknown, assetsRoot: string): MemeEntry[] {
     if (!existsSync(join(dir, name + '.png'))) continue;
     out.push({ name, desc: text });
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** 抽一张图（均匀随机）；空池返回 undefined */
@@ -53,7 +53,7 @@ export function matchMeme(pool: MemeEntry[], name: string): MemeEntry | undefine
 }
 
 /** 配图选择标记：`[图:名称]` 附在回复末尾（容忍全角冒号与前后空白） */
-const IMG_TAG = /\[图[:：]\s*([^\]\n]+?)\s*\]\s*$/;
+const IMG_TAG = /\[img:\s*([^\]\n]+?)\s*\]\s*$/i;
 
 /**
  * 从模型回复里取配图（对话选图的解析半侧；纯函数，无 LLM 依赖）：
@@ -72,5 +72,5 @@ export function extractChatImage(text: string, pool: MemeEntry[]): { text: strin
 
 /** 表情包清单 → 给模型看的候选列表（一行一张：名称 + 描述） */
 export function memeCatalog(pool: MemeEntry[]): string {
-  return pool.map((m) => '- ' + m.name + '：' + m.desc).join('\n');
+  return pool.map((m) => '- ' + m.name + ':' + m.desc).join('\n');
 }

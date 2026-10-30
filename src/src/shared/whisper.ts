@@ -45,7 +45,7 @@ async function getWithRetry(url: string): Promise<Response> {
 export async function fetchWhisperState(baseUrl: string = '/dsh-pet-7340/whisper'): Promise<WhisperState> {
   const res = await getWithRetry(baseUrl);
   const raw: RawWhisperResult = await res.json().catch(() => null);
-  if (!raw || typeof raw !== 'object') throw new Error('dsh-pet: 碎碎念响应非法');
+  if (!raw || typeof raw !== 'object') throw new Error('dsh-pet: malformed chatter response');
   if (raw.ok !== true) {
     return {
       ok: false,
@@ -55,7 +55,7 @@ export async function fetchWhisperState(baseUrl: string = '/dsh-pet-7340/whisper
   }
   const text = typeof raw.text === 'string' ? raw.text.trim() : '';
   const ts = Number(raw.ts);
-  if (!text || !Number.isFinite(ts)) throw new Error('dsh-pet: 碎碎念数据非法');
+  if (!text || !Number.isFinite(ts)) throw new Error('dsh-pet: malformed chatter data');
   const image = typeof raw.image === 'string' && raw.image.trim() ? raw.image.trim() : undefined;
   return image ? { ok: true, text, image, ts } : { ok: true, text, ts };
 }
@@ -137,7 +137,7 @@ export function whisperBubbleView(state: WhisperState): WhisperBubbleRow[] {
   if (state.ok) return [{ role: 'label', text: state.text }];
   const msg =
     state.reason === 'provider-missing'
-      ? '当前对话未配置模型，碎碎念不可用'
-      : '碎碎念生成失败' + (state.message ? '：' + state.message : '');
+      ? 'No model configured for this conversation; chatter unavailable'
+      : 'Chatter generation failed' + (state.message ? ':' + state.message : '');
   return [{ role: 'label', text: msg }];
 }

@@ -142,7 +142,7 @@ function stripThink(text) {
  */
 export async function ollamaChat(options = {}) {
 	const model = String(options.model || currentModel()).trim();
-	if (!model) return { ok: false, reason: "provider-missing", message: "独立模式：没有配置本机模型（screen-watch/state.json 的 quipModel / localModel 是空的）" };
+	if (!model) return { ok: false, reason: "provider-missing", message: "Standalone mode: no local model configured (quipModel / localModel in screen-watch/state.json are empty)" };
 
 	const body = {
 		model,
@@ -167,22 +167,22 @@ export async function ollamaChat(options = {}) {
 			signal: signals.length > 1 ? AbortSignal.any(signals) : signals[0],
 		});
 	} catch (error) {
-		return { ok: false, reason: "generate-error", message: "本机模型没连上（" + ollamaApi() + "）：" + (error instanceof Error ? error.message : String(error)) };
+		return { ok: false, reason: "generate-error", message: "Local model not reachable (" + ollamaApi() + "): " + (error instanceof Error ? error.message : String(error)) };
 	}
 	if (!res.ok) {
 		const detail = await res.text().catch(() => "");
-		return { ok: false, reason: "generate-error", message: `本机模型返回 HTTP ${res.status}${detail ? "：" + detail.slice(0, 200) : ""}` };
+		return { ok: false, reason: "generate-error", message: `Local model returned HTTP ${res.status}${detail ? ": " + detail.slice(0, 200) : ""}` };
 	}
 
 	let json;
 	try {
 		json = await res.json();
 	} catch (error) {
-		return { ok: false, reason: "generate-error", message: "本机模型返回的不是 JSON：" + (error instanceof Error ? error.message : String(error)) };
+		return { ok: false, reason: "generate-error", message: "Local model returned non-JSON:" + (error instanceof Error ? error.message : String(error)) };
 	}
 
 	const text = stripThink(json?.message?.content ?? json?.response ?? "");
-	if (!text) return { ok: false, reason: "generate-error", message: "本机模型没返回文本" };
+	if (!text) return { ok: false, reason: "generate-error", message: "Local model returned no text" };
 	return { ok: true, text, model, provider: LOCAL_PROVIDER };
 }
 

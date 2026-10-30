@@ -27,87 +27,74 @@
 
   /* 站点别名 → 网址。键都是「规范化后」的写法（小写、无空格）。 */
   var SITES = {
-    a站: 'https://www.acfun.cn',
     acfun: 'https://www.acfun.cn',
-    猴山: 'https://www.acfun.cn',
-    b站: 'https://www.bilibili.com',
-    小破站: 'https://www.bilibili.com',
-    哔哩哔哩: 'https://www.bilibili.com',
     bilibili: 'https://www.bilibili.com',
-    知乎: 'https://www.zhihu.com',
     zhihu: 'https://www.zhihu.com',
-    微博: 'https://weibo.com',
     weibo: 'https://weibo.com',
-    百度: 'https://www.baidu.com',
     baidu: 'https://www.baidu.com',
-    贴吧: 'https://tieba.baidu.com',
-    百度贴吧: 'https://tieba.baidu.com',
-    淘宝: 'https://www.taobao.com',
+    tieba: 'https://tieba.baidu.com',
     taobao: 'https://www.taobao.com',
-    天猫: 'https://www.tmall.com',
-    京东: 'https://www.jd.com',
-    拼多多: 'https://www.pinduoduo.com',
-    豆瓣: 'https://www.douban.com',
-    抖音: 'https://www.douyin.com',
-    快手: 'https://www.kuaishou.com',
-    小红书: 'https://www.xiaohongshu.com',
-    腾讯视频: 'https://v.qq.com',
-    爱奇艺: 'https://www.iqiyi.com',
-    优酷: 'https://www.youku.com',
-    网易云音乐: 'https://music.163.com',
-    'qq音乐': 'https://y.qq.com',
-    维基百科: 'https://zh.wikipedia.org',
-    必应: 'https://www.bing.com',
+    tmall: 'https://www.tmall.com',
+    jd: 'https://www.jd.com',
+    pinduoduo: 'https://www.pinduoduo.com',
+    douban: 'https://www.douban.com',
+    douyin: 'https://www.douyin.com',
+    kuaishou: 'https://www.kuaishou.com',
+    xiaohongshu: 'https://www.xiaohongshu.com',
+    'tencent video': 'https://v.qq.com',
+    iqiyi: 'https://www.iqiyi.com',
+    youku: 'https://www.youku.com',
+    'netease cloud music': 'https://music.163.com',
+    'qq music': 'https://y.qq.com',
+    wikipedia: 'https://en.wikipedia.org',
+    bing: 'https://www.bing.com',
     github: 'https://github.com',
-    油管: 'https://www.youtube.com',
     youtube: 'https://www.youtube.com',
-    推特: 'https://x.com',
-    脸书: 'https://www.facebook.com',
+    twitter: 'https://x.com',
+    x: 'https://x.com',
+    facebook: 'https://www.facebook.com',
   };
 
   /* 系统文件夹令牌（主进程用 app.getPath 翻成真路径）。这几个名字本身就是文件夹，
    * 说「打开下载」几乎不可能是要开某个叫"下载"的软件。 */
   var FOLDERS = {
-    下载: 'downloads',
-    下载夹: 'downloads',
-    下载目录: 'downloads',
-    下载文件夹: 'downloads',
-    文档: 'documents',
-    我的文档: 'documents',
-    文稿: 'documents',
-    图片: 'pictures',
-    照片: 'pictures',
-    相册: 'pictures',
-    桌面: 'desktop',
-    视频: 'videos',
-    影片: 'videos',
-    主目录: 'home',
-    用户目录: 'home',
-    家目录: 'home',
-    临时: 'temp',
-    临时文件夹: 'temp',
+    downloads: 'downloads',
+    downloadsfolder: 'downloads',
+    downloadfolder: 'downloads',
+    documents: 'documents',
+    mydocuments: 'documents',
+    pictures: 'pictures',
+    photos: 'pictures',
+    photoalbum: 'pictures',
+    desktop: 'desktop',
+    videos: 'videos',
+    movies: 'videos',
+    home: 'home',
+    homefolder: 'home',
+    userfolder: 'home',
+    temp: 'temp',
+    tempfolder: 'temp',
   };
 
   /* 带「文件夹/目录」后缀时才认的名字：这些词单独说更可能指软件（"打开音乐"＝开酷狗）。 */
   var FOLDERS_LOOSE = {
-    音乐: 'music',
-    歌曲: 'music',
-    电影: 'videos',
     music: 'music',
+    songs: 'music',
+    movies: 'videos',
+    videos: 'videos',
     downloads: 'downloads',
     documents: 'documents',
     pictures: 'pictures',
-    videos: 'videos',
     desktop: 'desktop',
     home: 'home',
     temp: 'temp',
   };
 
   /* 「B站首页」「知乎官网」这类说法：后缀先削掉再查表。 */
-  var SITE_SUFFIX = ['首页', '主页', '官网', '官方网站', '网站', '网页', '网址', '官方'];
-  var FOLDER_SUFFIX = ['文件夹', '资料夹', '目录', '夹'];
+  var SITE_SUFFIX = ['homepage', 'home', 'official site', 'official website', 'site', 'Web', 'URL', 'official'];
+  var FOLDER_SUFFIX = ['folder', 'folder', 'directory', 'dir'];
   /* 句尾语气词：语音识别经常把它们一并带出来（「打开B站吧」）。 */
-  var TAIL = ['吧', '呀', '啊', '哦', '喔', '嘛', '呢', '啦', '呗', '哈', '咯', '滴', '的', '了'];
+  var TAIL = ['please', 'hey', 'ah', 'oh', 'oh', 'hmm', 'uh', 'right', 'then', 'ha', 'okay', 'now', '\'s', 'a'];
 
   var FILE_EXT = /\.(exe|lnk|url|txt|md|log|ini|bat|cmd|ps1|docx?|xlsx?|pptx?|pdf|csv|json|xml|html?|png|jpe?g|gif|bmp|webp|svg|mp4|mkv|avi|mov|flv|wmv|mp3|wav|flac|m4a|zip|rar|7z|tar|gz|webm|onnx|apk|iso)$/i;
 
@@ -121,7 +108,18 @@
   function cleanTrailing(s) {
     var t = String(s == null ? '' : s).trim();
     var guard = 0;
-    while (t && guard++ < 8 && TAIL.indexOf(t.charAt(t.length - 1)) >= 0) t = t.slice(0, -1);
+    var changed = true;
+    while (changed && guard++ < 8) {
+      changed = false;
+      for (var i = 0; i < TAIL.length; i++) {
+        var suf = TAIL[i];
+        if (suf && t.length > suf.length && t.toLowerCase().slice(-suf.length) === suf) {
+          t = t.slice(0, -suf.length).trim();
+          changed = true;
+          break;
+        }
+      }
+    }
     return t.trim();
   }
 
@@ -132,7 +130,7 @@
     while (hit && guard++ < 6) {
       hit = false;
       for (var i = 0; i < list.length; i++) {
-        var suf = list[i];
+        var suf = norm(list[i]);
         if (t.length > suf.length && t.lastIndexOf(suf) === t.length - suf.length) {
           t = t.slice(0, -suf.length);
           hit = true;
@@ -156,8 +154,8 @@
 
   /** 盘符：D盘 / d: / D:\ → "D:\"；不认识返回空串。 */
   function driveRoot(name) {
-    var t = stripSuffix(norm(name), ['根目录', '磁盘', '盘符']);
-    var m = t.match(/^([a-z])(?::|盘)?[\\/]?$/);
+    var t = stripSuffix(norm(name), ['root directory', 'disk', 'drive', 'drive letter']);
+    var m = t.match(/^([a-z])(?::)?[\\/]?$/);
     return m ? m[1].toUpperCase() + ':\\' : '';
   }
 
