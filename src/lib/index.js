@@ -2441,19 +2441,31 @@ function apply(ctx) {
 		const text = assembler.blocks().filter((b) => b.type === "text").map((b) => b && typeof b.text === "string" ? b.text : "").join("").trim();
 		const a = text.indexOf("{");
 		const z = text.lastIndexOf("}");
-		if (a < 0 || z <= a) {
-			// 本地小视觉模型经常不按 JSON 回，直接说人话。以前这里判 judge-failed，
-			// 结果「看屏幕点评」一声不响；现在把整段话当点评用，情绪给个中性档。
-			const plain = shortenText(text.replace(/^["'“”‘’]+|["'“”‘’]+$/g, ''), 600);
-			if (!plain) return { error: "The model did not reply with JSON" };
-			return { react: true, emotion: "thinking", say: plain, parsed: "plain-text" };
+		const looksJson = a >= 0 || /"say"\s*:/.test(text);
+		if (looksJson) {
+			if (a >= 0 && z > a) {
+				try {
+					const o = JSON.parse(text.slice(a, z + 1));
+					return { react: o.react === true, emotion: String(o.emotion || ""), say: shortenText(o.say, 600) };
+				} catch (e) {
+					/* 截断/半截 JSON：往下捞 say */
+				}
+			}
+			// 回复被截断时最后的 "} 没出来：直接从 "say": "..." 里把话捞出来，
+			// 绝不把 JSON 外壳当成台词显示（实测气泡里出现过 {"react":true,...）。
+			const m = text.match(/"say"\s*:\s*"((?:\\.|[^"\\])*)/);
+			const em = text.match(/"emotion"\s*:\s*"([a-z]+)"/);
+			const emotion = em && ["success", "error", "thinking", "waiting", "result", "working"].includes(em[1]) ? em[1] : "thinking";
+			if (m && m[1]) {
+				const say = m[1].replace(/\\"/g, '"').replace(/\\n/g, " ").replace(/\\t/g, " ").trim();
+				if (say) return { react: true, emotion, say: shortenText(say, 600), parsed: "salvaged" };
+			}
+			return { react: false, emotion: "thinking", say: "", parsed: "json-unparsable" };
 		}
-		try {
-			const o = JSON.parse(text.slice(a, z + 1));
-			return { react: o.react === true, emotion: String(o.emotion || ""), say: shortenText(o.say, 600) };
-		} catch (e) {
-			return { error: "Failed to parse the model's JSON" };
-		}
+		// 本地小视觉模型经常不按 JSON 回，直接说人话：把整段话当点评用，情绪给个中性档。
+		const plain = shortenText(text.replace(/^["'“”‘’]+|["'“”‘’]+$/g, ''), 600);
+		if (!plain) return { error: "The model did not reply with JSON" };
+		return { react: true, emotion: "thinking", say: plain, parsed: "plain-text" };
 	};
 	const SW_EMOTIONS = ["success", "error", "thinking", "waiting", "result", "working"];
 	/** 情绪走工作状态通道（setState 只挑动画档位），台词一律走 /broadcast。
