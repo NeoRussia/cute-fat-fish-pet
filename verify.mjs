@@ -18,7 +18,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 // >>>GENERATED 由 build\check-release.mjs --emit --write 生成，别手改这一段
 const EXPECT = {
-  app: { files: 598, bytes: 74692816, treeSha256: "70509ebe362d60b73b2e309161d62db57f4faa867103091e2e3692bb320c16cd" },
+  app: { files: 598, bytes: 74693181, treeSha256: "7bed534112a1baaddc5abf0f468a323ba53eceed041fd8578cbaad704a7f1bb8" },
   launcher: { files: 10, bytes: 406163, treeSha256: "f59360821e50bdce629281a66654db70c764ed09a89456d996e68109d18c4b07" },
   standalone: { files: 14, bytes: 108717, treeSha256: "3c1dedfc207206ca23e96a02992297eca7c3c5b658216052d0f48941299b9e0a" },
   defaults: { files: 4, bytes: 14171, treeSha256: "5fbae451c060b9c19ca3f6171a06c756cca4b0c780244a2e23f58abc6f72bde7" },
@@ -26,7 +26,7 @@ const EXPECT = {
 
 // 我们自己写的那些关键文件：大小 + sha256（不含 verify.mjs 自己 —— 它一改哈希就变）
 const OURS = {
-  'app/lib/index.js': [133285, 'bc81f8f0b9fc901e1e46a15613b0f4764703c6758a7519bb7d448f7d7ede724a'],
+  'app/lib/index.js': [133650, 'a0fc7f104a10653cb9681403eee924bb399d94688581c2ed89a31792325a8f22'],
   'app/runtime/electron-helper/main.js': [142850, '94d147ff3a0b25031322ab8b075a7c270f9917204729402237a0b510dfc789b4'],
   'app/runtime/electron-helper/sprite.js': [255389, '00ee824d948fdd95917f67b3f67f7467f70d62d5f87315c3a41aed8257c2698e'],
   'app/runtime/electron-helper/targets.js': [9403, 'caac7e913a418466ac3e50afbbc9c3c95b5d2ed05dd3e8dfc0b9476d82050636'],

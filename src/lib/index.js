@@ -2410,7 +2410,7 @@ function apply(ctx) {
 			return { error: "Failed to attach the screenshot: " + (e instanceof Error ? e.message : String(e)) };
 		}
 		if (!ref) return { error: "Failed to attach the screenshot" };
-		const ask = force ? "Master wants you to comment on what's on screen right now." : "This is master's screen right now. Decide whether there is a highlight worth commenting on, a mistake, or someone stuck and frustrated.";
+		const ask = force ? "Master wants you to comment on what's on screen right now, and asked explicitly — so you must comment: react must be true and say must not be empty." : "This is master's screen right now. Decide whether there is a highlight worth commenting on, a mistake, or someone stuck and frustrated.";
 		const prompt = ask + 'Reply with one line of JSON only: {"react":true|false,"emotion":"success|error|thinking|waiting|result|working","say":"your comment, one or two short sentences (under 40 words)"}. If there is nothing to say, react=false and leave say empty.';
 		const assembler = new BlockAssembler();
 		try {
@@ -2518,10 +2518,13 @@ function apply(ctx) {
 			if (!(await swShot())) return await swRecord({ ok: false, reason: "capture-failed" });
 			const verdict = await swJudge(cfg, force);
 			if (verdict.error) return await swRecord({ ok: false, reason: "judge-failed", message: verdict.error });
-			const speak = force || cfg.verbosity === "chatty" ? verdict.say.length > 0 : verdict.react === true && verdict.say.length > 0;
-			if (!speak) return await swRecord({ ok: true, spoke: false, reason: "nothing-notable", mad, react: verdict.react, say: verdict.say });
-			const how = swSpeak(verdict.emotion, verdict.say);
-			return await swRecord({ ok: true, spoke: true, emotion: verdict.emotion, say: verdict.say, how, mad });
+			// A forced comment must always produce a line: if the model still returns an empty
+			// `say`, fall back to a short acknowledgement instead of going silent.
+			const sayText = verdict.say && verdict.say.length > 0 ? verdict.say : force ? "Nothing much catches my eye right now~" : "";
+			const speak = force || cfg.verbosity === "chatty" ? sayText.length > 0 : verdict.react === true && sayText.length > 0;
+			if (!speak) return await swRecord({ ok: true, spoke: false, reason: "nothing-notable", mad, react: verdict.react, say: sayText });
+			const how = swSpeak(verdict.emotion, sayText);
+			return await swRecord({ ok: true, spoke: true, emotion: verdict.emotion, say: sayText, how, mad });
 		} finally {
 			SW_RT.busy = false;
 		}
