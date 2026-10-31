@@ -236,13 +236,15 @@ async function generateWhisper(ctx, system, meme) {
 		reason: "generate-error",
 		message: "The model returned no text"
 	};
+	// A lone trailing letter is a truncated word (the model ran out of budget): drop the fragment.
+	const cleaned = text.replace(/\s+[A-Za-z]$/, "").trim() || text;
 	return meme ? {
 		ok: true,
-		text,
+		text: cleaned,
 		image: meme.name
 	} : {
 		ok: true,
-		text
+		text: cleaned
 	};
 }
 
@@ -691,18 +693,23 @@ function petChatPrompt(history, userText, pool = [], small = false) {
 }
 /** 对话结果收尾（本机 / 在线共用）：本机模型没有视觉能力，配图只按文本里的标记取。 */
 function petFinishChat(text, pool) {
+	// A lone trailing letter is a truncated word (the model ran out of budget): drop it.
+	const clean = (v) => {
+		const s = String(v == null ? "" : v).trim();
+		return s.replace(/\s+[A-Za-z]$/, "").trim() || s;
+	};
 	if (!Array.isArray(pool) || pool.length === 0) return {
 		ok: true,
-		text
+		text: clean(text)
 	};
 	const picked = extractChatImage(text, pool);
 	return picked.image ? {
 		ok: true,
-		text: picked.text,
+		text: clean(picked.text),
 		image: picked.image
 	} : {
 		ok: true,
-		text: picked.text
+		text: clean(picked.text)
 	};
 }
 async function generateChat(ctx, system, history, userText, pool = []) {
