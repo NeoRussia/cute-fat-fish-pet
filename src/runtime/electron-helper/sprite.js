@@ -4225,14 +4225,25 @@ class PetSprite {
     if (!say || !c.on || !c[k]) return false;
     const clauses = this.ttsClauses(say);
     if (!clauses.length) return false;
-    for (const cl of clauses) st.queue.push(cl);
-    while (st.queue.length > 8) st.queue.shift(); // 一次最多排 8 句：别念到天荒地老
     const same = k === 'sing' && st.lastKind === 'sing' && (st.pumping || st.playing);
-    st.lastKind = k;
     if (!same) {
+      // 新的一次发言：先作废上一轮还没念的队列、停掉正在播的音频，否则新话要排在旧话后面
+      // （实测：屏幕上刚出的点评要等上一段长回复念完才出声）。
+      st.token++;
+      st.queue.length = 0;
+      if (st.source) {
+        const s = st.source;
+        st.source = null;
+        try { s.stop(0); } catch (e) { /* 已经停了 */ }
+      }
+      st.playing = false;
+      this.ttsSpeaking = false;
       // 新的一次发言：诊断计数归零（一次发言最多写两次盘：首片成功一次、段末补一次总字节数）
       st.diagStarted = false; st.diagBytes = 0; st.diagT0 = Date.now(); st.diagText = say.slice(0, 80); st.diagVoice = c.voice; st.diagErrWritten = false;
     }
+    for (const cl of clauses) st.queue.push(cl);
+    while (st.queue.length > 8) st.queue.shift(); // 一次最多排 8 句：别念到天荒地老
+    st.lastKind = k;
     if (same) return true; // 跟唱：只在队尾续上，不打断上一句
     st.token++;
     const token = st.token;
@@ -4373,6 +4384,9 @@ class PetSprite {
             try { this.ttsDiagSave({ last: { ts: d.last.ts, text: d.last.text, voice: d.last.voice, bytes: st.diagBytes, ms: d.last.ms } }); } catch (e) { /* 诊断绝不能挡住说话 */ }
           }
         }
+      } else if (st.queue.length) {
+        // 本泵已被新发言顶替（token 变了）：把剩下的队列交给新泵，否则新话会卡住不出声。
+        void this.ttsPump(st, st.token);
       }
     }
   }
