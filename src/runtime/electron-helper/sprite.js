@@ -3930,11 +3930,13 @@ class PetSprite {
   ttsKey() { return 'dsh-pet-tts-main'; }
   ttsDefaults() {
     // autotalk 默认关：自言自语本来就多，一开麦就念会很吵（主人可以自己勾）
-    return { on: true, voice: 'en-US-AnaNeural', rate: '+0%', vol: 0.9, chat: true, notice: true, autotalk: false, sing: true };
+    return { on: true, voice: 'zh-CN-XiaoyiNeural', rate: '+0%', vol: 0.9, chat: true, notice: true, autotalk: false, sing: true };
   }
   ttsVoiceTable() {
     return [
-      { id: 'en-US-AnaNeural', label: 'Ana · cute (default)' },
+      { id: 'zh-CN-XiaoyiNeural', label: 'Xiaoyi · cute, Chinese accent (default)' },
+      { id: 'zh-CN-XiaoxiaoNeural', label: 'Xiaoxiao · soft, Chinese accent' },
+      { id: 'en-US-AnaNeural', label: 'Ana · cute' },
       { id: 'en-US-AvaNeural', label: 'Ava · warm' },
       { id: 'en-US-EmmaNeural', label: 'Emma · cheerful' },
       { id: 'en-US-JennyNeural', label: 'Jenny · friendly' },

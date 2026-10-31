@@ -2012,6 +2012,7 @@ const TTS_HEADERS = {
 };
 // 音色白名单（菜单只放 6 个中文音色，这里按 SPEC 收全 8 个：渲染端给别的值一律回落默认）
 const TTS_VOICES = [
+  'zh-CN-XiaoyiNeural', 'zh-CN-XiaoxiaoNeural',
   'en-US-AnaNeural', 'en-US-AvaNeural', 'en-US-EmmaNeural', 'en-US-JennyNeural',
   'en-US-AriaNeural', 'en-US-MichelleNeural', 'en-US-GuyNeural', 'en-GB-SoniaNeural',
   'en-AU-NatashaNeural', 'en-CA-ClaraNeural',
@@ -2051,7 +2052,8 @@ function ttsPitchFromConfig() {
 }
 
 function ttsBuildSsml(text, voice, rate, pitch) {
-  return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>" +
+  const lang = (/^([a-z]{2,3}-[A-Z]{2})/.exec(String(voice || '')) || [])[1] || 'en-US';
+  return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='" + lang + "'>" +
     "<voice name='" + voice + "'><prosody pitch='" + (pitch || '+0Hz') + "' rate='" + rate + "' volume='+0%'>" +
     ttsSsmlEscape(text) + '</prosody></voice></speak>';
 }
@@ -2213,7 +2215,7 @@ function ttsSynthesizeOn(url, text, voice, rate, timeoutMs, opts, onOpen) {
 
 async function ttsSynthesize(opts) {
   const text = String((opts && opts.text) || '').trim();
-  const voice = (opts && opts.voice) || 'en-US-AnaNeural';
+  const voice = (opts && opts.voice) || 'zh-CN-XiaoyiNeural';
   const rate = (opts && opts.rate) || '+0%';
   const timeoutMs = (opts && opts.timeoutMs) || 15000;
   if (!text) return Promise.reject(new Error('TTS text is empty'));
@@ -2243,7 +2245,7 @@ ipcMain.handle('pet:tts-speak', async (event, payload) => {
   const text = raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
   if (!text) return { ok: false, error: 'empty-text' };
   if (text.length > TTS_MAX_TEXT) return { ok: false, error: 'text-too-long' };
-  const voice = typeof p.voice === 'string' && TTS_VOICES.indexOf(p.voice) >= 0 ? p.voice : 'en-US-AnaNeural';
+  const voice = typeof p.voice === 'string' && TTS_VOICES.indexOf(p.voice) >= 0 ? p.voice : 'zh-CN-XiaoyiNeural';
   const rate = typeof p.rate === 'string' && /^[+-]\d{1,3}%$/.test(p.rate) ? p.rate : '+0%';
   if (TTS_INFLIGHT >= TTS_MAX_INFLIGHT) return { ok: false, error: 'busy (2 sentences already being synthesised)' };
   const t0 = Date.now();
