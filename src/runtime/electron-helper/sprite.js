@@ -1690,10 +1690,13 @@ class PetSprite {
       .then((r) => {
         const t = r && typeof r.reply === 'string' ? r.reply : '';
         if (!t) return null;
+        // Case-insensitive: the host capitalises labels ("Brain: Local", "Expression: Chatter")
+        // while this parser used to look for lowercase, so the ticks never moved.
+        const low = t.toLowerCase();
         const st = {
-          running: t.indexOf('Watching on') >= 0,
-          brain: t.indexOf('Brain: local') >= 0 ? 'local' : t.indexOf('Brain: auto') >= 0 ? 'auto' : 'dsh',
-          verbosity: t.indexOf('Expression: chatter') >= 0 ? 'chatty' : t.indexOf('Expression: only when you ask') >= 0 ? 'manual' : 'auto',
+          running: low.indexOf('watching on') >= 0,
+          brain: low.indexOf('brain: local') >= 0 ? 'local' : low.indexOf('brain: auto') >= 0 ? 'auto' : 'dsh',
+          verbosity: low.indexOf('expression: chatter') >= 0 ? 'chatty' : low.indexOf('expression: only when you ask') >= 0 ? 'manual' : 'auto',
         };
         this.brain = st.brain; // [local patch W] 状态探测结果顺手缓存成全局大脑（自语 / 跟唱 / 对话都按它选）
         return st;

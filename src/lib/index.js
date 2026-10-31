@@ -2567,7 +2567,7 @@ function apply(ctx) {
 		const c = swCfg();
 		const on = petOnlineInfo();
 		const brainBit = c.brain === "local" ? "Local" : c.brain === "auto" ? "Auto" : "Online" + (on.model ? "(" + on.model + ")" : "");
-		return "Watching" + (c.running ? "On" : "Off") + " | Brain: " + brainBit + " | Expression: " + (c.verbosity === "chatty" ? "Chatter" : c.verbosity === "manual" ? "Only when you ask" : "Highlights only") + ". (Say to me: watch this / stop / comment / switch to local / auto / chatter mode / watch status)";
+		return "Watching " + (c.running ? "on" : "off") + " | Brain: " + brainBit + " | Expression: " + (c.verbosity === "chatty" ? "Chatter" : c.verbosity === "manual" ? "Only when you ask" : "Highlights only") + ". (Say to me: watch this / stop / comment / switch to local / auto / chatter mode / watch status)";
 	};
 	const swControl = (raw) => {
 		const t = String(raw || "").trim();
