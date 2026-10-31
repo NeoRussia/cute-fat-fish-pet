@@ -2418,10 +2418,10 @@ class PetSprite {
     const r = await this.brainQuip(prompt, this.quipSystem(mood), 80).catch(() => null);
     const t = r && r.ok && typeof r.text === 'string' ? String(r.text).replace(/^["“”‘’]+|["“”‘’]+$/g, '').trim() : '';
     if (t) {
-      if (t.length <= 120) return t;
-      const cut = t.slice(0, 120);
+      if (t.length <= 160) return t;
+      const cut = t.slice(0, 160);
       const sp = cut.lastIndexOf(' ');
-      return (sp > 72 ? cut.slice(0, sp) : cut).replace(/[.,;:!?]+$/, '') + '…';
+      return (sp > 96 ? cut.slice(0, sp) : cut).replace(/[.,;:!?]+$/, '') + '…';
     }
     console.warn('[dsh-pet] brain produced nothing, falling back to built-in lines' + (r && (r.error || r.message) ? '(' + (r.error || r.message) + ')' : ''));
     return this.fallbackQuip(item, mood);

@@ -18,7 +18,7 @@ import type { jsx } from 'react/jsx-runtime';
  * 系数按默认 462px 设计：21px 字号 → ×0.0455、120px 最小宽 → 0.26、230px 最大宽 → 0.5 等。 */
 const bubbleCss = [
   // 本地字体：/dsh-pet-7340/font/ 由 host 从 assets/fonts 提供；font-display swap 先回退后切换
-  '@font-face{font-family:"ShangshouSoftCandy";src:url("/dsh-pet-7340/font/上首软糖体.ttf") format("truetype");font-display:swap;font-weight:400}',
+  '@font-face{font-family:"ShangshouSoftCandy";src:url("/dsh-pet-7340/font/ShangshouSoftCandy.ttf") format("truetype");font-display:swap;font-weight:400}',
   '.dsh-pet-bubble{position:absolute;left:50%;transform:translateX(-50%);' +
     'bottom:calc(100% - var(--dsh-pet-size)*0.108);' +
     'min-width:calc(var(--dsh-pet-size)*0.26);max-width:calc(var(--dsh-pet-size)*0.9);' +
