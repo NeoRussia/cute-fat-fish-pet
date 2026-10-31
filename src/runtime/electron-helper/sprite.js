@@ -4064,22 +4064,23 @@ class PetSprite {
     return 'notice';
   }
 
-  /** 长句切句：按标点切，太碎的并起来（免得一句"嗯。"也要一次 1.3s 的联网合成），
-   *  没有标点的长句按 40 字硬切。 */
+  /** 长句切句：只在**句末**标点切（逗号不断句——英文逗号很多，按逗号切会每段都冷启一次，
+   *  听感就是一句里一顿一顿的）。小句并到接近单次合成上限再发，减少请求数。 */
   ttsClauses(text) {
     const raw = String(text == null ? '' : text);
-    const parts = raw.split(/(?<=[。！？；…，,!?;])/);
+    const parts = raw.split(/(?<=[.!?…。！？；;])/);
     const out = [];
+    const LIMIT = 180; // TTS_MAX_TEXT 是 200，留出 SSML 转义的余量
     let cur = '';
-    for (let i = 0; i < parts.length; i++) {
-      const p = parts[i].trim();
+    for (const part of parts) {
+      const p = part.trim();
       if (!p) continue;
-      if (cur && (cur + p).length <= 28) { cur += p; continue; }
+      if (cur && (cur + p).length <= LIMIT) { cur += p; continue; }
       if (cur) { out.push(cur); cur = ''; }
       let rest = p;
-      while (rest.length > 40) {
-        let cutAt = rest.lastIndexOf(' ', 40);
-        if (cutAt < 20) cutAt = 40; // no usable space: keep the hard cut
+      while (rest.length > LIMIT) {
+        let cutAt = rest.lastIndexOf(' ', LIMIT);
+        if (cutAt < LIMIT / 2) cutAt = LIMIT; // 没有可用空格才硬切
         out.push(rest.slice(0, cutAt));
         rest = rest.slice(cutAt).replace(/^\s+/, '');
       }
@@ -4844,17 +4845,17 @@ class PetSprite {
     this.position();
   }
 
+  /** 气泡优先级：工作状态 > 碎碎念 > 余额（工作状态是 DSH 真实状态，最要紧；三者都关时隐藏） */
   renderBubble() {
-    // 气泡优先级：工作状态 > 碎碎念 > 余额（工作状态是 DSH 真实状态，最要紧；三者都关时隐藏）
     // 工作气泡与碎碎念同款弹窗样式：宽度自适应 + 自动换行（is-whisper：正常 white-space、宽随内容）
     // 配图标记交给 CSS：带图时取消 min-width（样式在 shared 的 MEME_BUBBLE_CSS，两端同一份）。
     // 图片 URL 与视频同规则：传 BASE 前缀（桌面是 file:// 页面，必须绝对地址）
     const whisperImg = this.whisperOn ? S.createMemeImage(this.whisperImage, BASE) : null;
-    this.bubble.classList.toggle(
-      'is-whisper',
-      // 余额「文字说明」（不可用状态）同样要换行变体：默认 nowrap 会把长文案顶出宠物宽度
-      this.workOn || (this.whisperOn && !!this.whisperView) || (this.bubbleOn && this.balanceWrap),
-    );
+    // 只在**显示**时切换 is-whisper；隐藏时保持原字号，否则 0.25s 淡出期间字体从小号跳回大号，
+    // 看上去就是「消失前突然变大一下」（0.034 → 0.0455）。
+    const wantWhisper = this.workOn || (this.whisperOn && !!this.whisperView) || (this.bubbleOn && this.balanceWrap);
+    if (wantWhisper) this.bubble.classList.add('is-whisper');
+    else if (this.bubbleOn) this.bubble.classList.remove('is-whisper');
     this.bubble.classList.toggle(S.MEME_BUBBLE_CLASS, !!whisperImg);
     if (this.workOn) {
       // 工作状态气泡：workOn 期间占位（文本缺失时隐藏，绝不让更弱的碎碎念/余额气泡反超）
