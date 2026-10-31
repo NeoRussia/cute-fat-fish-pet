@@ -155,7 +155,7 @@ async function supportsReasoningOff(ctx, provider, model) {
 
 //#endregion
 //#region src/host/whisper.ts
-/** 单次生成超时（ms）：骈骈念不需要长输出，30s 足够 */
+/** 单次生成超时（ms）：与对话一致 60s。30s 时推理型模型还没说完就被 abort， */
 const TIMEOUT_MS$1 = 3e4;
 /** 碎碎念指令：纯文本（原行为） */
 const USER_TEXT = "Say one everyday idle line, just one, under 20 words.";
@@ -170,7 +170,7 @@ async function generateWhisper(ctx, system, meme) {
 	// ==== [local patch 4] 全局大脑：碎碎念同样跟随开关 ====
 	const petPlan = petBrainPlan();
 	if (petPlan.brain !== "dsh") {
-		const petLocal = await petOllamaGenerate(petPlan.cfg, system, meme ? userTextWithMeme(meme) : USER_TEXT, { numPredict: 80 });
+		const petLocal = await petOllamaGenerate(petPlan.cfg, system, meme ? userTextWithMeme(meme) : USER_TEXT, { numPredict: 256 });
 		if (petLocal.ok) return meme ? {
 			ok: true,
 			text: petLocal.text,
@@ -216,6 +216,7 @@ async function generateWhisper(ctx, system, meme) {
 		})],
 		system,
 		temperature: 1,
+		maxTokens: 512,
 		...supportsOff ? { reasoningEffort: ReasoningEffortId("off") } : {},
 		signal: deadline
 	};
@@ -516,7 +517,7 @@ function petPolishSmall(text, max = 120) {
 	t = t.replace(/^["'“”‘’「『]+|["'“”‘’」』]+$/g, "").trim();
 	t = t.replace(/^(sure|okay|ok|of course|no problem|alright|got it)[,.!?\s]*/i, "");
 		const parts = t.split(/(?<=[.!?…~])\s*/).filter(Boolean);
-	if (parts.length > 2) t = parts.slice(0, 2).join("");
+	if (parts.length > 8) t = parts.slice(0, 8).join("");
 	if (t.length > max) t = t.slice(0, max - 1) + "~";
 	return t.trim();
 }
@@ -709,11 +710,11 @@ async function generateChat(ctx, system, history, userText, pool = []) {
 	const petPlan = petBrainPlan();
 	if (petPlan.brain !== "dsh") {
 		const localModel = String(petPlan.cfg && (petPlan.cfg.quipModel || petPlan.cfg.localModel) || "").trim();
-		const petLocal = await petOllamaGenerate(petPlan.cfg, system + petContextBlock(), petChatPrompt(history, userText, pool, petIsSmallModel(localModel)), { numPredict: 200 });
+		const petLocal = await petOllamaGenerate(petPlan.cfg, system + petContextBlock(), petChatPrompt(history, userText, pool, petIsSmallModel(localModel)), { numPredict: 800 });
 		// 小模型判定要覆盖「模型名留空、由后端自己挑」的情况：用实际用上的模型名再判一次
 		const small = petIsSmallModel(String(petLocal && petLocal.model || localModel));
 		if (petLocal.ok) {
-			const text = small ? petPolishSmall(petLocal.text, 140) : petLocal.text;
+			const text = small ? petPolishSmall(petLocal.text, 800) : petLocal.text;
 			const ret = petFinishChat(text, pool);
 			ret.provider = petLocal.provider;
 			ret.model = petLocal.model;
@@ -773,6 +774,7 @@ async function generateChat(ctx, system, history, userText, pool = []) {
 		})],
 		system: system + petContextBlock(),
 		temperature: 1,
+		maxTokens: 1024,
 		...supportsOff ? { reasoningEffort: ReasoningEffortId("off") } : {},
 		signal: deadline
 	};
@@ -2411,7 +2413,7 @@ function apply(ctx) {
 		}
 		if (!ref) return { error: "Failed to attach the screenshot" };
 		const ask = force ? "Master wants you to comment on what's on screen right now, and asked explicitly — so you must comment: react must be true and say must not be empty." : "This is master's screen right now. Decide whether there is a highlight worth commenting on, a mistake, or someone stuck and frustrated.";
-		const prompt = ask + 'Reply with one line of JSON only: {"react":true|false,"emotion":"success|error|thinking|waiting|result|working","say":"your comment, one or two short sentences (under 40 words)"}. If there is nothing to say, react=false and leave say empty.';
+		const prompt = ask + 'Reply with one line of JSON only: {"react":true|false,"emotion":"success|error|thinking|waiting|result|working","say":"your comment, one to three sentences (under 80 words)"}. If there is nothing to say, react=false and leave say empty.';
 		const assembler = new BlockAssembler();
 		try {
 			for await (const chunk of llm.stream({
@@ -2423,6 +2425,7 @@ function apply(ctx) {
 				})],
 				system: SW_SYSTEM,
 				temperature: 1,
+				maxTokens: 512,
 				signal: AbortSignal.timeout(90000)
 			})) assembler.push(chunk);
 		} catch (e) {
@@ -2434,13 +2437,13 @@ function apply(ctx) {
 		if (a < 0 || z <= a) {
 			// 本地小视觉模型经常不按 JSON 回，直接说人话。以前这里判 judge-failed，
 			// 结果「看屏幕点评」一声不响；现在把整段话当点评用，情绪给个中性档。
-			const plain = shortenText(text.replace(/^["'“”‘’]+|["'“”‘’]+$/g, ''), 240);
+			const plain = shortenText(text.replace(/^["'“”‘’]+|["'“”‘’]+$/g, ''), 600);
 			if (!plain) return { error: "The model did not reply with JSON" };
 			return { react: true, emotion: "thinking", say: plain, parsed: "plain-text" };
 		}
 		try {
 			const o = JSON.parse(text.slice(a, z + 1));
-			return { react: o.react === true, emotion: String(o.emotion || ""), say: shortenText(o.say, 240) };
+			return { react: o.react === true, emotion: String(o.emotion || ""), say: shortenText(o.say, 600) };
 		} catch (e) {
 			return { error: "Failed to parse the model's JSON" };
 		}
