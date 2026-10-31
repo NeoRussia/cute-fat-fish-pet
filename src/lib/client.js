@@ -538,6 +538,30 @@ function makeBalanceBubble(rt) {
 		});
 	};
 }
+/** 长文分页（网页版；桌面版在 sprite.js 里有一份同样的实现）：每页最多 ~220 字符，
+ *  句子优先、词边界其次；页间由调用方补 "…"。 */
+function speechPages(text, limit = 220) {
+	const s = String(text == null ? "" : text).trim();
+	if (!s) return [];
+	const parts = s.split(/(?<=[.!?…])\s+/);
+	const pages = [];
+	let cur = "";
+	for (const part of parts) {
+		const p = part.trim();
+		if (!p) continue;
+		if (cur && (cur + " " + p).length > limit) { pages.push(cur); cur = ""; }
+		let rest = p;
+		while (rest.length > limit) {
+			let cut = rest.lastIndexOf(" ", limit);
+			if (cut < limit * 0.5) cut = limit;
+			pages.push(rest.slice(0, cut));
+			rest = rest.slice(cut).replace(/^\s+/, "");
+		}
+		cur = cur ? cur + " " + rest : rest;
+	}
+	if (cur) pages.push(cur);
+	return pages;
+}
 function makeWhisperBubble(rt) {
 	const { h } = rt;
 	injectBubbleCss();
@@ -2728,6 +2752,10 @@ function makePetUI(rt) {
 		const [whisperBubbleOn, setWhisperBubbleOn] = useState(false);
 		const whisperBubbleTimerRef = useRef(null);
 		const [whisperText, setWhisperText] = useState(null);
+		const [whisperPage, setWhisperPage] = useState(0);
+		const whisperPagesRef = useRef([]);
+		const whisperPageTimerRef = useRef(null);
+		const whisperSeqRef = useRef(0);
 		const [whisperImage, setWhisperImage] = useState(void 0);
 		const [workBubbleOn, setWorkBubbleOn] = useState(false);
 		const workBubbleTimerRef = useRef(null);
@@ -2898,6 +2926,7 @@ function makePetUI(rt) {
 		useEffect(() => () => {
 			if (bubbleTimerRef.current !== null) window.clearTimeout(bubbleTimerRef.current);
 			if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
+			if (whisperPageTimerRef.current !== null) window.clearTimeout(whisperPageTimerRef.current);
 		}, []);
 		useEffect(() => () => {
 			if (menuRef.current) {
@@ -3070,11 +3099,31 @@ function makePetUI(rt) {
 			const name = pickSlot(pick(pool, animRef.current), animRef.current);
 			console.log("[dsh-pet] " + new Date().toTimeString().slice(0, 8) + " whisper pet=" + cfg.id + " -> [" + name + "] \"" + text + "\"");
 			stopMove();
+			whisperSeqRef.current += 1;
+			const seq = whisperSeqRef.current;
+			const pages = speechPages(text);
+			whisperPagesRef.current = pages;
+			setWhisperPage(0);
 			setWhisperText(text);
 			setWhisperImage(image);
 			setWhisperBubbleOn(true);
-			if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
-			whisperBubbleTimerRef.current = window.setTimeout(() => setWhisperBubbleOn(false), BUBBLE_DURATION_MS);
+			const armHide = () => {
+				if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
+				whisperBubbleTimerRef.current = window.setTimeout(() => setWhisperBubbleOn(false), BUBBLE_DURATION_MS);
+			};
+			armHide();
+			if (whisperPageTimerRef.current !== null) window.clearTimeout(whisperPageTimerRef.current);
+			const advance = (i) => {
+				if (whisperSeqRef.current !== seq || i >= pages.length - 1) return;
+				const wait = Math.min(30000, Math.max(2600, pages[i].length * 60));
+				whisperPageTimerRef.current = window.setTimeout(() => {
+					if (whisperSeqRef.current !== seq) return;
+					setWhisperPage(i + 1);
+					armHide();
+					advance(i + 1);
+				}, wait);
+			};
+			advance(0);
 			setOnce(true);
 			setAnim(name);
 		};
@@ -3774,6 +3823,11 @@ function makePetUI(rt) {
 			onContextMenu: handleContextMenu,
 			title: cfg.name
 		};
+		const whisperPages = whisperPagesRef.current;
+		const whisperPageIndex = whisperPages.length ? Math.min(whisperPage, whisperPages.length - 1) : 0;
+		const whisperShown = whisperPages.length
+			? whisperPages[whisperPageIndex] + (whisperPageIndex < whisperPages.length - 1 ? "…" : "")
+			: whisperText;
 		return h("div", {
 			ref: rootRef,
 			className: "dsh-pet-root",
@@ -3790,7 +3844,7 @@ function makePetUI(rt) {
 					on: bubbleOn
 				}) : null,
 				whisperText ? h(WhisperBubble, {
-					text: whisperText,
+					text: whisperShown,
 					image: whisperImage,
 					on: whisperBubbleOn
 				}) : null,

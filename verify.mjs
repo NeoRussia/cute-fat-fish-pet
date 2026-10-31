@@ -18,7 +18,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 // >>>GENERATED 由 build\check-release.mjs --emit --write 生成，别手改这一段
 const EXPECT = {
-  app: { files: 598, bytes: 74694823, treeSha256: "54f263e9b42ab7914907e2258110d4bde944bb4e8b45fb739a7e8713dab95e40" },
+  app: { files: 598, bytes: 74699258, treeSha256: "b83bca378a74942201c36709d0ceac14d68c42a49cd2e363959feb02f504bf4c" },
   launcher: { files: 10, bytes: 406311, treeSha256: "c327d2f55012a25d480a9aedabc636374abc990eb364cad8797025b9d0af3e55" },
   standalone: { files: 14, bytes: 108717, treeSha256: "3c1dedfc207206ca23e96a02992297eca7c3c5b658216052d0f48941299b9e0a" },
   defaults: { files: 4, bytes: 14171, treeSha256: "5fbae451c060b9c19ca3f6171a06c756cca4b0c780244a2e23f58abc6f72bde7" },

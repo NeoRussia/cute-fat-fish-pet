@@ -24,7 +24,7 @@ import {
 } from '../shared/balance';
 import { fetchWhisperState, fetchWhisperTrigger } from '../shared/whisper';
 import { WORK_STATUS_INDEX, fetchWorkStatus, type WorkStatusSnapshot } from '../shared/work-status';
-import { makeBalanceBubble, makeWhisperBubble } from './bubble';
+import { makeBalanceBubble, makeWhisperBubble, speechPages } from './bubble';
 import { clickScore, SCORE_MIN_SPEED, mountScorePopup, spawnScoreBurst } from '../shared/score-popup';
 import { CANVAS_H, FEET_Y, HIT_BOX, DRAG_THRESHOLD, PET_REF_WIDTH, ANIMATION_EXT } from '../shared/constants';
 // 统一右键菜单：与桌面共用同一份组件（树 + 渲染 + 样式，src/shared/menu.ts）
@@ -170,6 +170,10 @@ export function makePetUI(rt: {
     const whisperBubbleTimerRef = useRef<number | null>(null);
     // 碎碎念当前文本（本宠物独立生成的句子）+ 配图名称（开启配图时由 host 随机抽定，随文本一起来）
     const [whisperText, setWhisperText] = useState<string | null>(null);
+  const [whisperPage, setWhisperPage] = useState(0);
+  const whisperPagesRef = useRef<string[]>([]);
+  const whisperPageTimerRef = useRef<number | null>(null);
+  const whisperSeqRef = useRef(0);
     const [whisperImage, setWhisperImage] = useState<string | undefined>(undefined);
     // 工作状态气泡：DSH 会话状态联动（workStatusEnabled 开启时）——文本气泡独立于碎碎念，10s 显隐
     const [workBubbleOn, setWorkBubbleOn] = useState(false);
@@ -366,6 +370,7 @@ export function makePetUI(rt: {
       () => () => {
         if (bubbleTimerRef.current !== null) window.clearTimeout(bubbleTimerRef.current);
         if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
+        if (whisperPageTimerRef.current !== null) window.clearTimeout(whisperPageTimerRef.current);
       },
       [],
     );
@@ -657,12 +662,31 @@ export function makePetUI(rt: {
           '"',
       );
       stopMove();
+      whisperSeqRef.current += 1;
+      const seq = whisperSeqRef.current;
+      const pages = speechPages(text);
+      whisperPagesRef.current = pages;
+      setWhisperPage(0);
       setWhisperText(text);
       setWhisperImage(image);
       setWhisperBubbleOn(true);
-      // 气泡 10s 定时消失（与动画解耦；重复触发先清旧定时器）
-      if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
-      whisperBubbleTimerRef.current = window.setTimeout(() => setWhisperBubbleOn(false), BUBBLE_DURATION_MS);
+      const armHide = (): void => {
+        if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
+        whisperBubbleTimerRef.current = window.setTimeout(() => setWhisperBubbleOn(false), BUBBLE_DURATION_MS);
+      };
+      armHide();
+      if (whisperPageTimerRef.current !== null) window.clearTimeout(whisperPageTimerRef.current);
+      const advance = (i: number): void => {
+        if (whisperSeqRef.current !== seq || i >= pages.length - 1) return;
+        const wait = Math.min(30000, Math.max(2600, pages[i].length * 60));
+        whisperPageTimerRef.current = window.setTimeout(() => {
+          if (whisperSeqRef.current !== seq) return;
+          setWhisperPage(i + 1);
+          armHide();
+          advance(i + 1);
+        }, wait);
+      };
+      advance(0);
       setOnce(true);
       setAnim(name);
     };
@@ -1448,6 +1472,11 @@ export function makePetUI(rt: {
       onContextMenu: handleContextMenu,
       title: cfg.name,
     };
+    const whisperPages = whisperPagesRef.current;
+    const whisperPageIndex = whisperPages.length ? Math.min(whisperPage, whisperPages.length - 1) : 0;
+    const whisperShown = whisperPages.length
+      ? whisperPages[whisperPageIndex] + (whisperPageIndex < whisperPages.length - 1 ? '…' : '')
+      : whisperText;
     return h('div', {
       ref: rootRef,
       className: 'dsh-pet-root',
@@ -1466,7 +1495,7 @@ export function makePetUI(rt: {
         // 见上头 useEffect 的 319 行门控）；whisperText 只由 triggerWhisper 设置——
         // 自动轮询被门控后不会触发，所以这里任何说话气泡（碎碎念/对话回复）都照常渲染。
         // image 为该次配图（碎碎念/对话配图开关开启时由 host 抽定/模型选定）
-        whisperText ? h(WhisperBubble, { text: whisperText, image: whisperImage, on: whisperBubbleOn }) : null,
+        whisperText ? h(WhisperBubble, { text: whisperShown, image: whisperImage, on: whisperBubbleOn }) : null,
         // 工作状态气泡（仅启用工作状态联动的宠物渲染；文本 = 任务详情优先，状态文案兜底）
         workText && cfg.workStatusEnabled ? h(WhisperBubble, { text: workText, on: workBubbleOn }) : null,
         h('div', {
