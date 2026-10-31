@@ -2530,11 +2530,16 @@ class PetSprite {
       o = salv;
     }
     if (!o || typeof o !== 'object') return null;
-    const say = String(o.say == null ? '' : o.say)
+    let say = String(o.say == null ? '' : o.say)
       .replace(/^["“”‘’「」]+|["“”‘’「」]+$/g, '')
       .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 40);
+      .trim();
+    // 以前的 40 字硬切会把台词切在半个词上（"…splash the n"）；给足长度并只在词边界收。
+    if (say.length > 200) {
+      const cut = say.slice(0, 200);
+      const sp = cut.lastIndexOf(' ');
+      say = (sp > 120 ? cut.slice(0, sp) : cut).replace(/[.,;:!?]+$/, '') + '…';
+    }
     const pool = this.actPool();
     const actRaw = String(o.act == null ? '' : o.act).trim();
     const act = actRaw && pool.indexOf(actRaw) >= 0 ? actRaw : '';
