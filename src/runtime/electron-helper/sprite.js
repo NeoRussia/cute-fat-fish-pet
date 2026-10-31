@@ -2418,11 +2418,18 @@ class PetSprite {
 
   async generateQuip(prompt, item, mood) {
     // [local patch W] 自己说话跟随全局大脑：本地=只走本机（免费）；API=走 DSH 当前在线模型；都没出话才用内置语录
-    const r = await this.brainQuip(prompt, this.quipSystem(mood), 300).catch(() => null);
-    let t = r && r.ok && typeof r.text === 'string' ? String(r.text).replace(/^["“”‘’]+|["“”‘’]+$/g, '').trim() : '';
-    // 单个字母结尾几乎一定是模型预算用尽、词被截断（实测 "night b"）：把这截碎片去掉，
-    // 宁可少一个词也不要半个词。
-    if (t) t = t.replace(/\s+[A-Za-z]$/, '').trim();
+    const clean = (r) => {
+      let t = r && r.ok && typeof r.text === 'string' ? String(r.text).replace(/^["“”‘’]+|["“”‘’]+$/g, '').trim() : '';
+      // 单个字母结尾几乎一定是模型预算用尽、词被截断（实测 "night b"）。
+      if (t) t = t.replace(/\s+[A-Za-z]$/, '').trim();
+      return t;
+    };
+    let t = clean(await this.brainQuip(prompt, this.quipSystem(mood), 300).catch(() => null));
+    // 看起来被截断（不长、也没有句末标点）→ 加预算再要一次；有的小模型/网关会提前收尾。
+    if (t && t.length < 120 && !/[.!?…~"'”’)]$/.test(t)) {
+      const retry = clean(await this.brainQuip(prompt, this.quipSystem(mood), 600).catch(() => null));
+      if (retry && retry.length > t.length) t = retry;
+    }
     if (t) {
       if (t.length <= 160) return t;
       const cut = t.slice(0, 160);
