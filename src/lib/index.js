@@ -2388,6 +2388,15 @@ function apply(ctx) {
 		}
 	};
 	const SW_SYSTEM = "You are the chibi blue-haired maid who never leaves master's desktop, and right now you are looking at master's screen. Speak naturally, one short sentence, a little playful; no lecturing, no explaining yourself, never mention AI.";
+	/** Cut at a word boundary: English needs far more room than the Chinese 40 characters, and a hard
+	 *  slice ends mid-word ("…first MV ma"). */
+	const shortenText = (s, max) => {
+		const t = String(s == null ? "" : s).replace(/\s+/g, " ").trim();
+		if (t.length <= max) return t;
+		const cut = t.slice(0, max);
+		const sp = cut.lastIndexOf(" ");
+		return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[.,;:!?]+$/, "") + "…";
+	};
 	const swJudge = async (cfg, force) => {
 		const llm = ctx.llm;
 		const att = typeof ctx.get === "function" ? ctx.get("attachments") : void 0;
@@ -2402,7 +2411,7 @@ function apply(ctx) {
 		}
 		if (!ref) return { error: "Failed to attach the screenshot" };
 		const ask = force ? "Master wants you to comment on what's on screen right now." : "This is master's screen right now. Decide whether there is a highlight worth commenting on, a mistake, or someone stuck and frustrated.";
-		const prompt = ask + 'Reply with one line of JSON only: {"react":true|false,"emotion":"success|error|thinking|waiting|result|working","say":"a comment under 40 characters"}. If there is nothing to say, react=false and leave say empty.';
+		const prompt = ask + 'Reply with one line of JSON only: {"react":true|false,"emotion":"success|error|thinking|waiting|result|working","say":"your comment, one short sentence (under 25 words)"}. If there is nothing to say, react=false and leave say empty.';
 		const assembler = new BlockAssembler();
 		try {
 			for await (const chunk of llm.stream({
@@ -2425,13 +2434,13 @@ function apply(ctx) {
 		if (a < 0 || z <= a) {
 			// 本地小视觉模型经常不按 JSON 回，直接说人话。以前这里判 judge-failed，
 			// 结果「看屏幕点评」一声不响；现在把整段话当点评用，情绪给个中性档。
-			const plain = text.replace(/^["'“”‘’]+|["'“”‘’]+$/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+			const plain = shortenText(text.replace(/^["'“”‘’]+|["'“”‘’]+$/g, ''), 160);
 			if (!plain) return { error: "The model did not reply with JSON" };
 			return { react: true, emotion: "thinking", say: plain, parsed: "plain-text" };
 		}
 		try {
 			const o = JSON.parse(text.slice(a, z + 1));
-			return { react: o.react === true, emotion: String(o.emotion || ""), say: String(o.say || "").trim().slice(0, 80) };
+			return { react: o.react === true, emotion: String(o.emotion || ""), say: shortenText(o.say, 160) };
 		} catch (e) {
 			return { error: "Failed to parse the model's JSON" };
 		}

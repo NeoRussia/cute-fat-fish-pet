@@ -2417,7 +2417,12 @@ class PetSprite {
     // [local patch W] 自己说话跟随全局大脑：本地=只走本机（免费）；API=走 DSH 当前在线模型；都没出话才用内置语录
     const r = await this.brainQuip(prompt, this.quipSystem(mood), 80).catch(() => null);
     const t = r && r.ok && typeof r.text === 'string' ? String(r.text).replace(/^["“”‘’]+|["“”‘’]+$/g, '').trim() : '';
-    if (t) return t.slice(0, 60);
+    if (t) {
+      if (t.length <= 120) return t;
+      const cut = t.slice(0, 120);
+      const sp = cut.lastIndexOf(' ');
+      return (sp > 72 ? cut.slice(0, sp) : cut).replace(/[.,;:!?]+$/, '') + '…';
+    }
     console.warn('[dsh-pet] brain produced nothing, falling back to built-in lines' + (r && (r.error || r.message) ? '(' + (r.error || r.message) + ')' : ''));
     return this.fallbackQuip(item, mood);
   }
