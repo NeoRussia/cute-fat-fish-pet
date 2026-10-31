@@ -18,7 +18,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 // >>>GENERATED 由 build\check-release.mjs --emit --write 生成，别手改这一段
 const EXPECT = {
-  app: { files: 598, bytes: 74692458, treeSha256: "3d49a1b4c3af2c1d8cead0fa6b996cfd0c0d9c248aa13196a610778f517ae4bb" },
+  app: { files: 598, bytes: 74692274, treeSha256: "5d5f908a00dde1ba0300a73537c8f58bc9a1be7c2b3fde3e4ff5499eaf4961b4" },
   launcher: { files: 10, bytes: 406162, treeSha256: "b256d4af8ce58f43f1c8f97bba8f912de309c6a38f99cb6bb1d8d31ec3eaf4a7" },
   standalone: { files: 14, bytes: 108717, treeSha256: "3c1dedfc207206ca23e96a02992297eca7c3c5b658216052d0f48941299b9e0a" },
   defaults: { files: 4, bytes: 14171, treeSha256: "5fbae451c060b9c19ca3f6171a06c756cca4b0c780244a2e23f58abc6f72bde7" },
@@ -28,7 +28,7 @@ const EXPECT = {
 const OURS = {
   'app/lib/index.js': [133295, '43aa2240c78d060980b9c257095f593bd87a3d1c929ef971b5eb6a8b63c3f6ca'],
   'app/runtime/electron-helper/main.js': [142850, '94d147ff3a0b25031322ab8b075a7c270f9917204729402237a0b510dfc789b4'],
-  'app/runtime/electron-helper/sprite.js': [255021, '3b81200e0f79110cce09a142b604905cbcb2448c5bf90107a0c1e5c302d9514c'],
+  'app/runtime/electron-helper/sprite.js': [254837, '099bc95cc8ba0fc5f300595b121bd33b2433a0f1000b7f7b55d639c7ed1c087d'],
   'app/runtime/electron-helper/targets.js': [9403, 'caac7e913a418466ac3e50afbbc9c3c95b5d2ed05dd3e8dfc0b9476d82050636'],
   'app/runtime/electron-helper/shared-core.js': [54397, '9c82f0ca15958008ebb20dde83055e875088b5a7e7c6ad609280b8d5bbd2ca76'],
   'app/runtime/electron-helper/events.js': [18485, 'd61d6e84eb3448210892c4edc8bc2ad8d430372a099d15c5580db965a2be9d0e'],

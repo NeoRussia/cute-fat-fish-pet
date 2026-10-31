@@ -3029,21 +3029,12 @@ class PetSprite {
 
   // [发布版补丁 A4d] 多带一个 opts 一路透传到原型上的 showWhisper（低优先级让路要用）
   speakSegmented(text, image, orig, opts) {
-    // 新话来了就作废旧队列 —— **必须先做，再判断长度**：
-    // 否则"短的插队话"会走 early return，旧的长句队列还在后台继续冒话（踩过）。
+    // Cancel any pending segment timer, then show the whole line in one bubble.
+    // The TTS layer splits internally (ttsClauses) for speech, so the bubble no longer has to
+    // advance chunk by chunk — that used to replace the text with a mid-word 40-char slice.
     if (this.speechTimer) window.clearTimeout(this.speechTimer);
-    const token = (this.speechToken = (this.speechToken || 0) + 1);
-    const segs = this.splitSpeech(text);
-    if (segs.length <= 1) return orig(text, image, opts);
-    const step = (i) => {
-      if (this.speechToken !== token) return;
-      orig(segs[i], i === 0 ? image : undefined, opts);
-      if (i + 1 >= segs.length) return;
-      const wait = Math.min(12000, Math.max(2600, segs[i].length * 220));
-      this.speechTimer = window.setTimeout(() => step(i + 1), wait);
-    };
-    step(0);
-    return null;
+    this.speechToken = (this.speechToken || 0) + 1;
+    return orig(text, image, opts);
   }
 
   // ===== [local patch R] 专有名词纠正（她说错的名字改回正确写法）=====
@@ -4086,7 +4077,12 @@ class PetSprite {
       if (cur && (cur + p).length <= 28) { cur += p; continue; }
       if (cur) { out.push(cur); cur = ''; }
       let rest = p;
-      while (rest.length > 40) { out.push(rest.slice(0, 40)); rest = rest.slice(40); }
+      while (rest.length > 40) {
+        let cutAt = rest.lastIndexOf(' ', 40);
+        if (cutAt < 20) cutAt = 40; // no usable space: keep the hard cut
+        out.push(rest.slice(0, cutAt));
+        rest = rest.slice(cutAt).replace(/^\s+/, '');
+      }
       cur = rest;
     }
     if (cur) out.push(cur);
