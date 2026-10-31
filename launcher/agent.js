@@ -218,7 +218,7 @@ function buildSystem(ctx) {
 	lines.push("");
 	lines.push("Available tools (args must be a JSON object):");
 	for (const [name, def] of Object.entries(TOOLS)) {
-		lines.push(`- ${name}(${def.args}) —— ${def.desc}${def.perm ? `【需要「${PERM_CN[def.perm]}」权限】` : ""}`);
+		lines.push(`- ${name}(${def.args}) —— ${def.desc}${def.perm ? `[needs the "${PERM_CN[def.perm]}" permission]` : ""}`);
 	}
 	lines.push("");
 	lines.push("Rules:");

@@ -2363,13 +2363,13 @@ class PetSprite {
     const what = item ? '“' + item.name + '”' : 'Desktop';
     const pool = item
       ? {
-          好奇: ['This ' + what + ' looks fun~', what + ' has been sitting here a while, huh?'],
-          好玩: [what + ' looks so pokeable~', 'Hey ' + what + ', not bad.'],
-          无聊: ['Staring at ' + what + ' ...so boring.', what + ' won\'t even pay me attention.'],
+          Curious: ['This ' + what + ' looks fun~', what + ' has been sitting here a while, huh?'],
+          Fun: [what + ' looks so pokeable~', 'Hey ' + what + ', not bad.'],
+          Bored: ['Staring at ' + what + ' ...so boring.', what + ' won\'t even pay me attention.'],
         }
       : {
-          撒娇: ['Master~ no one\'s paid me attention in ages.', 'I\'m right here, look at me~'],
-          无聊: ['So quiet... I\'ll count my breaths.', 'Nothing to do, so I\'ll swish my tail.'],
+          Coy: ['Master~ no one\'s paid me attention in ages.', 'I\'m right here, look at me~'],
+          Bored: ['So quiet... I\'ll count my breaths.', 'Nothing to do, so I\'ll swish my tail.'],
         };
     const arr = pool[mood] || pool[Object.keys(pool)[0]];
     return arr[Math.floor(Math.random() * arr.length)];
@@ -4614,7 +4614,7 @@ class PetSprite {
   singCleanLine(text) {
     let t = String(text || '').replace(/\r?\n/g, ' ').trim();
     t = t.replace(/^["'“”‘’「」『』]+/, '').replace(/["'“”‘’「」『』]+$/, '').trim();
-    t = t.replace(/^(歌词|下一句|句子)[:：]\s*/, '').trim();
+    t = t.replace(/^(lyrics?|next line|line)\s*[:：]\s*/i, '').trim();
     if (!t) return '';
     if (t.length > 24) return '';
     if (!/[\u3400-\u9FFFa-zA-Z0-9]/.test(t)) return '';

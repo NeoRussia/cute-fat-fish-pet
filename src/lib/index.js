@@ -514,8 +514,8 @@ function petPolishSmall(text, max = 120) {
 	let t = petStripThink(String(text || ""));
 	t = t.replace(/[*_`#>]+/g, "").replace(/\s+/g, " ").trim();
 	t = t.replace(/^["'“”‘’「『]+|["'“”‘’」』]+$/g, "").trim();
-	t = t.replace(/^(好的|好呀|好嘞|当然|没问题|可以)[，,。！!\s]*/u, "");
-	const parts = t.split(/(?<=[。！？!?～~])\s*/).filter(Boolean);
+	t = t.replace(/^(sure|okay|ok|of course|no problem|alright|got it)[,.!?\s]*/i, "");
+		const parts = t.split(/(?<=[.!?…~])\s*/).filter(Boolean);
 	if (parts.length > 2) t = parts.slice(0, 2).join("");
 	if (t.length > max) t = t.slice(0, max - 1) + "~";
 	return t.trim();
@@ -2574,9 +2574,9 @@ function apply(ctx) {
 		if (!t) return null;
 		/* [互动@2] 先认「问句 + 档位词」，由代码如实回答（放在长度闸门和「换本地 / 换在线」
 		 *  之前：以前「你现在是本地模型吗」会被当成切换命令，直接把人家的档位改掉）。 */
-		if (t.length <= 60 && /还是|吗|呢|是不是|什么|哪个|哪一|？|\?/.test(t) && /在线|离线|联网|本机|本地|自动择优|模型|大脑|上网|网上/.test(t) && !/^(换|用|切|改|开始|停止|别|帮|给|把|让)/.test(t)) return swModeText();
+		if (t.length <= 80 && /(which|what|are you|is it|do you|does it|\?)/i.test(t) && /(online|offline|networked|local|model|brain|api)/i.test(t) && !/^(switch|use|change|set|start|stop|go|enable|disable)\b/i.test(t)) return swModeText();
 		if (t.length > 24) return null;
-		const has = (list) => list.some((k) => t.indexOf(k) >= 0);
+		const has = (list) => list.some((k) => t.toLowerCase().indexOf(k.toLowerCase()) >= 0);
 		if (has(["Watch status", "Which mode", "Current mode", "Watch mode"])) return swStatusText();
 		if (has(["Stop watching", "Stop", "Turn off watching", "Stop watching", "Quit staring"])) {
 			void swSave({ running: false });
