@@ -3107,21 +3107,23 @@ function makePetUI(rt) {
 			setWhisperText(text);
 			setWhisperImage(image);
 			setWhisperBubbleOn(true);
-			const armHide = () => {
+			const waitFor = (i) => Math.min(30000, Math.max(2600, pages[i].length * 60));
+			const armHide = (ms) => {
 				if (whisperBubbleTimerRef.current !== null) window.clearTimeout(whisperBubbleTimerRef.current);
-				whisperBubbleTimerRef.current = window.setTimeout(() => setWhisperBubbleOn(false), BUBBLE_DURATION_MS);
+				whisperBubbleTimerRef.current = window.setTimeout(() => setWhisperBubbleOn(false), ms);
 			};
-			armHide();
+			// Keep the bubble up for the whole page, not just the base 10 s.
+			armHide(pages.length > 1 ? waitFor(0) + BUBBLE_DURATION_MS : BUBBLE_DURATION_MS);
 			if (whisperPageTimerRef.current !== null) window.clearTimeout(whisperPageTimerRef.current);
 			const advance = (i) => {
 				if (whisperSeqRef.current !== seq || i >= pages.length - 1) return;
-				const wait = Math.min(30000, Math.max(2600, pages[i].length * 60));
 				whisperPageTimerRef.current = window.setTimeout(() => {
 					if (whisperSeqRef.current !== seq) return;
-					setWhisperPage(i + 1);
-					armHide();
-					advance(i + 1);
-				}, wait);
+					const next = i + 1;
+					setWhisperPage(next);
+					armHide(next < pages.length - 1 ? waitFor(next) + BUBBLE_DURATION_MS : BUBBLE_DURATION_MS);
+					advance(next);
+				}, waitFor(i));
 			};
 			advance(0);
 			setOnce(true);

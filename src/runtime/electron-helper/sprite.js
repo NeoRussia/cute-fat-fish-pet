@@ -3061,6 +3061,13 @@ class PetSprite {
       // ~105 ms per character matches the measured Edge output (40 chars ≈ 4.2 s); without TTS,
       // reading pace is faster.
       const wait = Math.min(30000, Math.max(2600, pages[i].length * (ttsOn ? 105 : 60)));
+      // Keep the bubble on screen for the whole page: the base showWhisper arms a 10 s hide timer,
+      // which would blank the bubble before a long page finishes being spoken.
+      if (this.whisperTimer !== null) window.clearTimeout(this.whisperTimer);
+      this.whisperTimer = window.setTimeout(() => {
+        this.whisperOn = false;
+        this.renderBubble();
+      }, wait + 8000);
       this.speechTimer = window.setTimeout(() => step(i + 1), wait);
     };
     step(0);
