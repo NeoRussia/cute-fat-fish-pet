@@ -3014,30 +3014,57 @@ class PetSprite {
     /* perm:noop（信息行）：什么都不做 */
   }
 
-  // ===== [local patch Q] 长句分段说：一句说完再冒下一句 =====
+  // [发布版补丁 A4d] 多带一个 opts 一路透传到原型上的 showWhisper（低优先级让路要用）
+  /** 长文分页：每页最多 ~220 字符（约 5-6 行，正好放得进气泡），按句子优先、其次按词边界切。
+   *  页间由调用方补 "…"，表示还有下文。 */
   splitSpeech(text) {
     const s = String(text || '').trim();
     if (!s) return [];
-    const rough = s.split(/(?<=[。！？!?；;…])\s*/).map((x) => x.trim()).filter(Boolean);
-    const out = [];
-    for (const part of rough) {
-      if (part.length <= 40) {
-        out.push(part);
-        continue;
+    const LIMIT = 220;
+    const parts = s.split(/(?<=[.!?…])\s+/);
+    const pages = [];
+    let cur = '';
+    for (const part of parts) {
+      const p = part.trim();
+      if (!p) continue;
+      if (cur && (cur + ' ' + p).length > LIMIT) { pages.push(cur); cur = ''; }
+      let rest = p;
+      while (rest.length > LIMIT) {
+        let cut = rest.lastIndexOf(' ', LIMIT);
+        if (cut < LIMIT * 0.5) cut = LIMIT; // 没有可用空格才硬切
+        pages.push(rest.slice(0, cut));
+        rest = rest.slice(cut).replace(/^\s+/, '');
       }
-      for (let i = 0; i < part.length; i += 40) out.push(part.slice(i, i + 40));
+      cur = cur ? cur + ' ' + rest : rest;
     }
-    return out;
+    if (cur) pages.push(cur);
+    return pages;
   }
 
-  // [发布版补丁 A4d] 多带一个 opts 一路透传到原型上的 showWhisper（低优先级让路要用）
+  // 长文分页显示：先显示第一页（带 "…"），按阅读/朗读速度翻到下一页；最后一页不带省略号。
   speakSegmented(text, image, orig, opts) {
-    // Cancel any pending segment timer, then show the whole line in one bubble.
-    // The TTS layer splits internally (ttsClauses) for speech, so the bubble no longer has to
-    // advance chunk by chunk — that used to replace the text with a mid-word 40-char slice.
     if (this.speechTimer) window.clearTimeout(this.speechTimer);
-    this.speechToken = (this.speechToken || 0) + 1;
-    return orig(text, image, opts);
+    const token = (this.speechToken = (this.speechToken || 0) + 1);
+    const pages = this.splitSpeech(text);
+    if (pages.length <= 1) return orig(text, image, opts);
+    // ttsSpeak() consumes st.kind on each call; re-arm it so pages 2..n keep the same
+    // "when to speak" category (chat / notice / autotalk / sing) as page 1.
+    const st = typeof this.ttsEnsure === 'function' ? this.ttsEnsure() : null;
+    const kind = st ? st.kind : '';
+    const step = (i) => {
+      if (this.speechToken !== token) return;
+      if (st && kind) st.kind = kind;
+      const more = i < pages.length - 1;
+      orig(more ? pages[i] + '…' : pages[i], i === 0 ? image : undefined, opts);
+      if (!more) return;
+      const ttsOn = !!(this.ttsConfig && this.ttsConfig().on);
+      // ~105 ms per character matches the measured Edge output (40 chars ≈ 4.2 s); without TTS,
+      // reading pace is faster.
+      const wait = Math.min(30000, Math.max(2600, pages[i].length * (ttsOn ? 105 : 60)));
+      this.speechTimer = window.setTimeout(() => step(i + 1), wait);
+    };
+    step(0);
+    return null;
   }
 
   // ===== [local patch R] 专有名词纠正（她说错的名字改回正确写法）=====
