@@ -96,9 +96,9 @@ function rowsToNodes(h: typeof jsx, rows: BalanceBubbleRow[]): ReactNode {
  * 工厂内注入样式一次（与 pet.ts 的 injectCss 同模式）；组件为哑组件，props = { state, on }。
  * 内容来自 src/shared 的 balanceBubbleView（与桌面模式完全一致）。
  */
-/** 长文分页（网页版；桌面版 sprite.js 里有一份同样的实现）：每页最多 ~220 字符，
+/** 长文分页（网页版；桌面版 sprite.js 里有一份同样的实现）：每页最多 ~150 字符，
  *  句子优先、词边界其次；页间由调用方补 "…"。 */
-export function speechPages(text: string | null | undefined, limit = 220): string[] {
+export function speechPages(text: string | null | undefined, limit = 150): string[] {
   const s = String(text == null ? '' : text).trim();
   if (!s) return [];
   const parts = s.split(/(?<=[.!?…])\s+/);

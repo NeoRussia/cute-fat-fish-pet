@@ -538,9 +538,9 @@ function makeBalanceBubble(rt) {
 		});
 	};
 }
-/** 长文分页（网页版；桌面版在 sprite.js 里有一份同样的实现）：每页最多 ~220 字符，
+/** 长文分页（网页版；桌面版在 sprite.js 里有一份同样的实现）：每页最多 ~150 字符，
  *  句子优先、词边界其次；页间由调用方补 "…"。 */
-function speechPages(text, limit = 220) {
+function speechPages(text, limit = 150) {
 	const s = String(text == null ? "" : text).trim();
 	if (!s) return [];
 	const parts = s.split(/(?<=[.!?…])\s+/);

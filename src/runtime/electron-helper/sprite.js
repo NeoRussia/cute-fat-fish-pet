@@ -3015,12 +3015,12 @@ class PetSprite {
   }
 
   // [发布版补丁 A4d] 多带一个 opts 一路透传到原型上的 showWhisper（低优先级让路要用）
-  /** 长文分页：每页最多 ~220 字符（约 5-6 行，正好放得进气泡），按句子优先、其次按词边界切。
-   *  页间由调用方补 "…"，表示还有下文。 */
+  /** 长文分页：每页最多 ~150 字符（约 5-6 行，正好放得进气泡；再长就会顶到窗口上沿被裁掉），
+   *  按句子优先、其次按词边界切。页间由调用方补 "…"，表示还有下文。 */
   splitSpeech(text) {
     const s = String(text || '').trim();
     if (!s) return [];
-    const LIMIT = 220;
+    const LIMIT = 150;
     const parts = s.split(/(?<=[.!?…])\s+/);
     const pages = [];
     let cur = '';
