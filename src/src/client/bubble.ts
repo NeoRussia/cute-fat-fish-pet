@@ -21,14 +21,14 @@ const bubbleCss = [
   '@font-face{font-family:"ShangshouSoftCandy";src:url("/dsh-pet-7340/font/上首软糖体.ttf") format("truetype");font-display:swap;font-weight:400}',
   '.dsh-pet-bubble{position:absolute;left:50%;transform:translateX(-50%);' +
     'bottom:calc(100% - var(--dsh-pet-size)*0.108);' +
-    'min-width:calc(var(--dsh-pet-size)*0.26);max-width:calc(var(--dsh-pet-size)*0.5);' +
+    'min-width:calc(var(--dsh-pet-size)*0.26);max-width:calc(var(--dsh-pet-size)*0.9);' +
     'padding:calc(var(--dsh-pet-size)*0.022) calc(var(--dsh-pet-size)*0.030);' +
     'border-radius:calc(var(--dsh-pet-size)*0.035);' +
     'background:rgba(255,255,255,.92);' +
     'color:#2b2b2b;font-family:"ShangshouSoftCandy","Yuanti SC","YouYuan","Comic Sans MS","PingFang SC","Microsoft YaHei",sans-serif;' +
     'font-size:calc(var(--dsh-pet-size)*0.0455);line-height:1.6;z-index:3;pointer-events:none;' +
     'box-shadow:0 calc(var(--dsh-pet-size)*0.009) calc(var(--dsh-pet-size)*0.035) rgba(0,0,0,.14),0 1px 3px rgba(0,0,0,.08);' +
-    'backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease;white-space:nowrap}',
+    'backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease;white-space:normal;overflow-wrap:anywhere}',
   // 底部尾巴：小三角指向下方宠物（同样随宠物缩放）
   '.dsh-pet-bubble::after{content:"";position:absolute;left:50%;bottom:calc(var(--dsh-pet-size)*-0.017);' +
     'transform:translateX(-50%);border:calc(var(--dsh-pet-size)*0.017) solid transparent;' +
@@ -37,7 +37,7 @@ const bubbleCss = [
   // 碎碎念变体：字号缩到余额气泡的 0.75（0.0455→0.034）、取消 nowrap 允许换行、
   // 宽度随文字数量自适应（短句窄框、长句封顶绕行），高度随行数自然增长
   '.dsh-pet-bubble.dsh-pet-whisper{font-size:calc(var(--dsh-pet-size)*0.034);' +
-    'min-width:calc(var(--dsh-pet-size)*0.10);max-width:calc(var(--dsh-pet-size)*0.5);' +
+    'min-width:calc(var(--dsh-pet-size)*0.10);max-width:calc(var(--dsh-pet-size)*0.9);' +
     'white-space:normal;overflow-wrap:anywhere}',
   // 配图（碎碎念/对话共用）：样式在 shared 的 MEME_BUBBLE_CSS（两端同一份，由
   // createMemeImage 注入）——这里不再重复写一份，避免与桌面端 index.html 走样

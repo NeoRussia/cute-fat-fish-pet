@@ -70,7 +70,7 @@
         transform: translateX(-50%);
         bottom: calc(100% - var(--pet-size, 462px) * 0.108);
         min-width: calc(var(--pet-size, 462px) * 0.26);
-        max-width: calc(var(--pet-size, 462px) * 0.5);
+        max-width: calc(var(--pet-size, 462px) * 0.9);
         padding: calc(var(--pet-size, 462px) * 0.022) calc(var(--pet-size, 462px) * 0.03);
         border-radius: calc(var(--pet-size, 462px) * 0.035);
         background: rgba(255, 255, 255, 0.92);
@@ -87,7 +87,8 @@
           0 1px 3px rgba(0, 0, 0, 0.08);
         opacity: 0;
         transition: opacity 0.25s ease;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
       }
       .pet-bubble::after {
         content: '';
@@ -107,7 +108,7 @@
       .pet-bubble.is-whisper {
         font-size: calc(var(--pet-size, 462px) * 0.034);
         min-width: calc(var(--pet-size, 462px) * 0.1);
-        max-width: calc(var(--pet-size, 462px) * 0.5);
+        max-width: calc(var(--pet-size, 462px) * 0.9);
         white-space: normal;
         overflow-wrap: anywhere;
       }
